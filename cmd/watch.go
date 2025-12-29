@@ -11,7 +11,8 @@ var watchCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectPath := args[0]
-		watcher.Watch(projectPath)
+		watcher.Start(projectPath)
+		select {}
 	},
 }
 

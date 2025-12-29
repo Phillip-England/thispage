@@ -7,42 +7,17 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/phillip-england/thispage/pkg/compiler"
-	"github.com/phillip-england/thispage/pkg/server"
 )
 
-func WatchAndServe(projectPath string, port string) {
-	fmt.Printf("Building project at %s...\n", projectPath)
-	if err := compiler.Build(projectPath); err != nil {
-		fmt.Printf("Error building project: %v\n", err)
-		return
-	}
-	fmt.Println("Project built successfully!")
-
-	liveDir := filepath.Join(projectPath, "live")
-	go server.Serve(liveDir, port)
-
-	watch(projectPath)
-}
-
-func Watch(projectPath string) {
-	fmt.Printf("Building project at %s...\n", projectPath)
-	if err := compiler.Build(projectPath); err != nil {
-		fmt.Printf("Error building project: %v\n", err)
-		return
-	}
-	fmt.Println("Project built successfully!")
-	watch(projectPath)
-}
-
-func watch(projectPath string) {
+func Start(projectPath string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		fmt.Printf("failed to create watcher: %v\n", err)
 		return
 	}
-	defer watcher.Close()
 
 	go func() {
+		defer watcher.Close()
 		for {
 			select {
 			case event, ok := <-watcher.Events:
@@ -85,6 +60,4 @@ func watch(projectPath string) {
 	}
 
 	fmt.Printf("Watching for changes in %s\n", projectPath)
-	<-make(chan struct{})
 }
-
