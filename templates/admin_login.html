@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/static/output.css">
+  <title>Admin Login</title>
+</head>
+<body class="bg-black text-white font-sans antialiased min-h-screen flex items-center justify-center p-6">
+  <div class="w-full max-w-xs">
+    <div class="mb-10 text-center">
+      <h1 class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-medium">Authentication</h1>
+    </div>
+    
+    <form action="/admin/login" method="POST" class="space-y-8">
+      <div class="relative">
+        <input 
+          type="password" 
+          name="password" 
+          placeholder="Password" 
+          required 
+          autofocus
+          class="w-full bg-transparent border-b border-neutral-800 py-3 text-sm focus:outline-none focus:border-white transition-colors placeholder:text-neutral-700 rounded-none"
+        >
+      </div>
+      
+      <button 
+        type="submit" 
+        class="w-full bg-white text-black py-3 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-neutral-200 transition-colors"
+      >
+        Sign In
+      </button>
+    </form>
+    
+    <div class="mt-12 text-center">
+      <a href="/" class="text-[9px] uppercase tracking-widest text-neutral-600 hover:text-neutral-400 transition-colors">
+        Return to site
+      </a>
+    </div>
+  </div>
+</body>
+</html>
