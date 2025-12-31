@@ -10,9 +10,12 @@
   <div class="w-full max-w-xs">
     <div class="mb-10 text-center">
       <h1 class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-medium">Authentication</h1>
+      {{if .Error}}
+        <p class="mt-4 text-[10px] text-red-500 uppercase tracking-widest font-bold">{{.Error}}</p>
+      {{end}}
     </div>
     
-    <form action="/admin/login" method="POST" class="space-y-8">
+    <form action="/admin" method="POST" class="space-y-8">
       <div class="relative">
         <input 
           type="text" 

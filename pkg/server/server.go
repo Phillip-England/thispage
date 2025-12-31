@@ -3,20 +3,23 @@ package server
 import (
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/phillip-england/thispage/pkg/routes"
 	"github.com/phillip-england/vii/vii"
 )
 
 func Serve(projectPath string) error {
-	_ = projectPath
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
-	liveDirPath := path.Join(cwd, projectPath, "live")
+	absProjectPath := filepath.Join(cwd, projectPath)
+	liveDirPath := filepath.Join(absProjectPath, "live")
+	
 	app := vii.NewApp()
+	app.SetContext("PROJECT_PATH", absProjectPath)
 	
 	if err := app.LoadTemplates("./templates", nil); err != nil {
 		return err
@@ -27,8 +30,10 @@ func Serve(projectPath string) error {
 	app.ServeDir("/", liveDirPath)
 	app.ServeDir("/static", path.Join(cwd, "static"))
 
-	app.Handle("GET /admin/login", routes.GetAdminLogin)
-	app.Handle("POST /admin/login", routes.PostAdminLogin)
+	app.Handle("GET /admin", routes.GetAdmin)
+	app.Handle("POST /admin", routes.PostAdmin)
+	app.Handle("GET /admin/dashboard", routes.GetAdminDashboard)
+	app.Handle("GET /admin/logout", routes.GetAdminLogout)
 
 	return app.Serve("8080")
 }

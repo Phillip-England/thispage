@@ -1,4 +1,4 @@
-package validators
+package forms
 
 import (
 	"net/http"
