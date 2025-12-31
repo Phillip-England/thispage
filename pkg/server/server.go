@@ -5,6 +5,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/phillip-england/thispage/pkg/keys"
 	"github.com/phillip-england/thispage/pkg/routes"
 	"github.com/phillip-england/vii/vii"
 )
@@ -19,7 +20,7 @@ func Serve(projectPath string) error {
 	liveDirPath := filepath.Join(absProjectPath, "live")
 	
 	app := vii.NewApp()
-	app.SetContext("PROJECT_PATH", absProjectPath)
+	app.SetContext(keys.ProjectPath, absProjectPath)
 	
 	if err := app.LoadTemplates("./templates", nil); err != nil {
 		return err
