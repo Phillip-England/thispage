@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/static/output.css">
+  <title>Edit File - {{.FilePath}}</title>
+</head>
+<body class="bg-black text-white font-sans antialiased min-h-screen p-10 flex flex-col">
+  <form action="/admin/files/save" method="POST" class="flex flex-col flex-grow h-full">
+      <input type="hidden" name="path" value="{{.FilePath}}">
+      
+      <header class="flex justify-between items-center mb-6 border-b border-neutral-800 pb-6 shrink-0">
+        <div>
+          <h1 class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-medium">Dashboard</h1>
+          <h2 class="text-xl font-bold mt-2 truncate max-w-2xl">{{.FilePath}}</h2>
+          <p class="text-[9px] text-neutral-600 mt-1 font-mono tracking-widest">{{.ProjectPath}}</p>
+        </div>
+        <div class="flex gap-4 items-center">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white text-xs uppercase tracking-widest py-2 px-6 rounded transition-colors font-bold">
+                Save Changes
+            </button>
+            <div class="h-6 w-px bg-neutral-800"></div>
+            <a href="/admin/files" class="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
+                Cancel
+            </a>
+        </div>
+      </header>
+    
+      <main class="flex-grow grid grid-rows-1 min-h-0 relative group">
+        <div class="border border-neutral-800 p-1 bg-neutral-900 relative">
+            <textarea name="content" class="w-full h-full block bg-black text-neutral-300 font-mono text-sm p-4 outline-none resize-none border-none focus:bg-neutral-950 transition-colors placeholder-neutral-700" spellcheck="false">{{.Content}}</textarea>
+        </div>
+        <div class="absolute bottom-4 right-4 text-xs text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Editable
+        </div>
+      </main>
+  </form>
+</body>
+</html>

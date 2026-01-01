@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-// New creates a new directory with the given name, and "live", "partials", and "templates" subdirectories inside it.
+// New creates a new directory with the given name, and standard subdirectories and files.
 func New(name string) error {
 	if name == "" {
 		return fmt.Errorf("project name cannot be empty")
@@ -19,48 +19,40 @@ func New(name string) error {
 	}
 
 	// Define subdirectory paths
-	liveDirPath := filepath.Join(name, "live")
-	partialsDirPath := filepath.Join(name, "partials")
+	dirs := []string{"live", "partials", "templates", "templates/posts", "static"}
+
+	for _, dir := range dirs {
+		dirPath := filepath.Join(name, dir)
+		err = os.MkdirAll(dirPath, 0755)
+		if err != nil {
+			_ = os.RemoveAll(name)
+			return fmt.Errorf("could not create subdirectory '%s': %w", dir, err)
+		}
+	}
+
 	templatesDirPath := filepath.Join(name, "templates")
-
-	// Create the "live" subdirectory
-	err = os.Mkdir(liveDirPath, 0755)
-	if err != nil {
-		_ = os.RemoveAll(name) // Clean up parent directory
-		return fmt.Errorf("could not create 'live' subdirectory in '%s': %w", name, err)
-	}
-
-	// Create the "partials" subdirectory
-	err = os.Mkdir(partialsDirPath, 0755)
-	if err != nil {
-		_ = os.RemoveAll(name) // Clean up parent directory
-		return fmt.Errorf("could not create 'partials' subdirectory in '%s': %w", name, err)
-	}
-
-	// Create the "templates" subdirectory
-	err = os.Mkdir(templatesDirPath, 0755)
-	if err != nil {
-		_ = os.RemoveAll(name) // Clean up parent directory
-		return fmt.Errorf("could not create 'templates' subdirectory in '%s': %w", name, err)
-	}
-
-	// Create default files and directories
+	partialsDirPath := filepath.Join(name, "partials")
 	postsTemplatesPath := filepath.Join(templatesDirPath, "posts")
-	if err := os.Mkdir(postsTemplatesPath, 0755); err != nil {
-		_ = os.RemoveAll(name)
-		return fmt.Errorf("could not create 'posts' subdirectory in 'templates': %w", err)
-	}
 
 	defaultIndexHTML := `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
   <title>Home - This Page</title>
 </head>
-<body>
-  <h1>Home Page</h1>
-  {{ include ./partials/navigation.html }}
+<body class="bg-neutral-950 text-neutral-300 font-sans antialiased min-h-screen">
+  <div class="max-w-2xl mx-auto py-20 px-6">
+    {{ include ./partials/navigation.html }}
+    <main class="mt-12">
+        <h1 class="text-4xl font-bold text-white tracking-tight">Home Page</h1>
+        <p class="mt-4 text-neutral-500 leading-relaxed">
+            Welcome to your new thispage project. This is the index page. 
+            You can find this file at <code class="bg-neutral-900 px-1 rounded text-blue-400">templates/index.html</code>.
+        </p>
+    </main>
+  </div>
 </body>
 </html>`
 
@@ -69,11 +61,19 @@ func New(name string) error {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
   <title>About - This Page</title>
 </head>
-<body>
-  <h1>About Page</h1>
-  {{ include ./partials/navigation.html }}
+<body class="bg-neutral-950 text-neutral-300 font-sans antialiased min-h-screen">
+  <div class="max-w-2xl mx-auto py-20 px-6">
+    {{ include ./partials/navigation.html }}
+    <main class="mt-12">
+        <h1 class="text-4xl font-bold text-white tracking-tight">About Page</h1>
+        <p class="mt-4 text-neutral-500 leading-relaxed">
+            This is the about page. You can customize this in <code class="bg-neutral-900 px-1 rounded text-blue-400">templates/about.html</code>.
+        </p>
+    </main>
+  </div>
 </body>
 </html>`
 
@@ -82,32 +82,32 @@ func New(name string) error {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
   <title>First Post - This Page</title>
 </head>
-<body>
-  <h1>First Post</h1>
-  {{ include ./partials/navigation.html }}
+<body class="bg-neutral-950 text-neutral-300 font-sans antialiased min-h-screen">
+  <div class="max-w-2xl mx-auto py-20 px-6">
+    {{ include ./partials/navigation.html }}
+    <main class="mt-12">
+        <h1 class="text-4xl font-bold text-white tracking-tight">First Post</h1>
+        <p class="mt-4 text-neutral-500 leading-relaxed">
+            This is your first blog post. Find it at <code class="bg-neutral-900 px-1 rounded text-blue-400">templates/posts/1.html</code>.
+        </p>
+    </main>
+  </div>
 </body>
 </html>`
 
-	defaultNavigationHTML := `<nav>
-  <ul>
-    <li>
-      <a href='/'>Home</a>
-    </li>
-    <li>
-      <a href='/about'>About</a>
-    </li>
-    <li>
-      <a href='/posts/1'>First Post</a>
-    </li>
-  </ul>
+	defaultNavigationHTML := `<nav class="flex gap-6 border-b border-neutral-800 pb-6">
+  <a href='/' class="text-xs uppercase tracking-widest hover:text-white transition-colors">Home</a>
+  <a href='/about' class="text-xs uppercase tracking-widest hover:text-white transition-colors">About</a>
+  <a href='/posts/1' class="text-xs uppercase tracking-widest hover:text-white transition-colors">First Post</a>
 </nav>`
 
 	filesToCreate := map[string]string{
 		filepath.Join(templatesDirPath, "index.html"):     defaultIndexHTML,
 		filepath.Join(templatesDirPath, "about.html"):     defaultAboutHTML,
-		filepath.Join(postsTemplatesPath, "1.html"): defaultPostHTML,
+		filepath.Join(postsTemplatesPath, "1.html"):        defaultPostHTML,
 		filepath.Join(partialsDirPath, "navigation.html"): defaultNavigationHTML,
 	}
 

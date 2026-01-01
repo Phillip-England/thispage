@@ -34,6 +34,9 @@ func Serve(projectPath string) error {
 	app.Handle("GET /admin", routes.GetAdmin)
 	app.Handle("POST /admin", routes.PostAdmin)
 	app.Handle("GET /admin/dashboard", routes.GetAdminDashboard)
+	app.Handle("GET /admin/files", routes.GetAdminFiles)
+	app.Handle("GET /admin/files/view", routes.GetAdminFileView)
+	app.Handle("POST /admin/files/save", routes.PostAdminFileSave)
 	app.Handle("GET /admin/logout", routes.GetAdminLogout)
 
 	return app.Serve("8080")

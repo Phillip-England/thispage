@@ -3,10 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
   <title>Home - This Page</title>
 </head>
-<body>
-  <h1>Home Page</h1>
-  {{ include ./partials/navigation.html }}
+<body class="bg-neutral-950 text-neutral-300 font-sans antialiased min-h-screen">
+  <div class="max-w-2xl mx-auto py-20 px-6">
+    {{ include ./partials/navigation.html }}
+    <main class="mt-12">
+        <h1 class="text-4xl font-bold text-white tracking-tight">Home Page</h1>
+        <p class="mt-4 text-neutral-500 leading-relaxed">
+            Welcome to your new thispage project. This is the index page. 
+            You can find this file at <code class="bg-neutral-900 px-1 rounded text-blue-400">templates/index.html</code>.
+        </p>
+    </main>
+  </div>
 </body>
 </html>

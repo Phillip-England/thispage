@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/static/output.css">
+  <title>Admin Files</title>
+  <style>
+      .dir-arrow { transition: transform 0.2s; }
+      .dir-open .dir-arrow { transform: rotate(90deg); }
+  </style>
+</head>
+<body class="bg-black text-white font-sans antialiased min-h-screen p-10">
+  <header class="flex justify-between items-center mb-12 border-b border-neutral-800 pb-6">
+    <div>
+      <h1 class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-medium">Dashboard</h1>
+      <h2 class="text-2xl font-bold mt-2">File Manager</h2>
+      <p class="text-[9px] text-neutral-600 mt-1 font-mono tracking-widest">{{.ProjectPath}}</p>
+    </div>
+    <div class="flex gap-4">
+        <a href="/admin/dashboard" class="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
+            Back
+        </a>
+        <a href="/admin/logout" class="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
+            Logout
+        </a>
+    </div>
+  </header>
+
+  <main>
+    <div class="flex gap-2 mb-4">
+        <button onclick="expandAll()" class="text-xs uppercase tracking-wider bg-neutral-900 hover:bg-neutral-800 text-white py-2 px-4 border border-neutral-800 transition-colors">
+            Expand All
+        </button>
+        <button onclick="collapseAll()" class="text-xs uppercase tracking-wider bg-neutral-900 hover:bg-neutral-800 text-white py-2 px-4 border border-neutral-800 transition-colors">
+            Collapse All
+        </button>
+    </div>
+
+    <div class="border border-neutral-800 p-6">
+        <ul class="text-sm font-mono">
+            {{template "fileNode" .Files}}
+        </ul>
+    </div>
+  </main>
+
+  <script>
+    function toggleDir(element) {
+        const parentLi = element.closest('li');
+        const childrenUl = parentLi.querySelector('ul');
+        if (childrenUl) {
+            childrenUl.classList.toggle('hidden');
+            element.classList.toggle('dir-open');
+        }
+    }
+
+    function expandAll() {
+        document.querySelectorAll('.dir-children').forEach(el => el.classList.remove('hidden'));
+        document.querySelectorAll('.dir-header').forEach(el => el.classList.add('dir-open'));
+    }
+
+    function collapseAll() {
+        document.querySelectorAll('.dir-children').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.dir-header').forEach(el => el.classList.remove('dir-open'));
+    }
+    
+    // Initialize: Open the root directory by default if needed, or leave everything collapsed.
+    // The recursive template creates a structure where the top-level is a 'li'.
+    // We might want to expand the very first level automatically.
+    document.addEventListener('DOMContentLoaded', () => {
+        // Find the root ul's direct children li's children ul and remove hidden
+        // Actually, let's just leave it all collapsed by default (except maybe root?)
+        // The user asked for "directories that open and close", usually implies starting closed.
+        
+        // Let's expand the root node by default so the user sees something.
+        const rootHeader = document.querySelector('.dir-header');
+        if (rootHeader) {
+            toggleDir(rootHeader);
+        }
+    });
+  </script>
+</body>
+</html>
+
+{{define "fileNode"}}
+    <li class="my-1">
+        <div class="dir-header flex items-center gap-2 hover:bg-neutral-900 py-1 px-2 rounded cursor-pointer select-none transition-colors" 
+             {{if .IsDir}}onclick="toggleDir(this)"{{end}}>
+            
+            {{if .IsDir}}
+                <!-- Arrow Icon -->
+                <svg class="dir-arrow w-3 h-3 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+                <span class="text-yellow-500">DIR</span>
+                <span class="font-bold text-white">{{.Name}}</span>
+            {{else}}
+                <!-- Spacer for alignment -->
+                <span class="w-3 h-3"></span>
+                <span class="text-blue-500">FILE</span>
+                <a href="/admin/files/view?path={{.Path}}" class="text-neutral-300 hover:text-white hover:underline">{{.Name}}</a>
+            {{end}}
+        </div>
+        {{if .Children}}
+            <ul class="dir-children pl-4 border-l border-neutral-800 ml-3 hidden">
+                {{range .Children}}
+                    {{template "fileNode" .}}
+                {{end}}
+            </ul>
+        {{end}}
+    </li>
+{{end}}

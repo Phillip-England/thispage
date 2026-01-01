@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
   <title>About - This Page</title>
 </head>
-<body>
-  <h1>About Page</h1>
-  <nav>
-  <ul>
-    <li>
-      <a href='/'>Home</a>
-    </li>
-    <li>
-      <a href='/about'>About</a>
-    </li>
-    <li>
-      <a href='/posts/1'>First Post</a>
-    </li>
-  </ul>
+<body class="bg-neutral-950 text-neutral-300 font-sans antialiased min-h-screen">
+  <div class="max-w-2xl mx-auto py-20 px-6">
+    <nav class="flex gap-6 border-b border-neutral-800 pb-6">
+  <a href='/' class="text-xs uppercase tracking-widest hover:text-white transition-colors">Home</a>
+  <a href='/about' class="text-xs uppercase tracking-widest hover:text-white transition-colors">About</a>
+  <a href='/posts/1' class="text-xs uppercase tracking-widest hover:text-white transition-colors">First Post</a>
 </nav>
+    <main class="mt-12">
+        <h1 class="text-4xl font-bold text-white tracking-tight">About Page</h1>
+        <p class="mt-4 text-neutral-500 leading-relaxed">
+            This is the about page. You can customize this in <code class="bg-neutral-900 px-1 rounded text-blue-400">templates/about.html</code>.
+        </p>
+    </main>
+  </div>
 </body>
 </html>
