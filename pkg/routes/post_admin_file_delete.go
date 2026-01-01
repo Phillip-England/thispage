@@ -10,7 +10,7 @@ import (
 	"github.com/phillip-england/vii/vii"
 )
 
-func PostAdminFileSave(w http.ResponseWriter, r *http.Request) {
+func PostAdminFileDelete(w http.ResponseWriter, r *http.Request) {
 	projectPath, ok := vii.GetContext(keys.ProjectPath, r).(string)
 	if !ok {
 		vii.WriteError(w, http.StatusInternalServerError, "Project path not found in context")
@@ -23,16 +23,14 @@ func PostAdminFileSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	relPath := r.FormValue("path")
-	content := r.FormValue("content")
-
 	if relPath == "" {
 		vii.WriteError(w, http.StatusBadRequest, "Path is required")
 		return
 	}
 
-	// Security Check (same as View)
+	// Security Check
 	relPath = filepath.Clean(relPath)
-
+	
     // Security: Only allow partials/ and templates/
     allowed := false
     for _, prefix := range []string{"partials", "templates"} {
@@ -50,28 +48,25 @@ func PostAdminFileSave(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    if !allowed {
-        vii.WriteError(w, http.StatusForbidden, "Access denied: Restricted directory.")
-        return
-    }
+	if !allowed {
+		vii.WriteError(w, http.StatusForbidden, "Access denied: Restricted directory.")
+		return
+	}
 
 	absPath := filepath.Join(projectPath, relPath)
 
-	if !strings.HasPrefix(absPath, projectPath) {
-		vii.WriteError(w, http.StatusForbidden, "Access denied: Path outside project directory")
-		return
-	}
+    // Verify it exists before trying to delete (optional but good for error messaging)
+    if _, err := os.Stat(absPath); os.IsNotExist(err) {
+        vii.WriteError(w, http.StatusNotFound, "File or directory not found")
+        return
+    }
 
-	// Write the file
-	// 0644 is a good default permission for files (rw-r--r--)
-    // We are overwriting the file.
-	err := os.WriteFile(absPath, []byte(content), 0644)
+	// Delete recursively
+	err := os.RemoveAll(absPath)
 	if err != nil {
-		vii.WriteError(w, http.StatusInternalServerError, "Error saving file: "+err.Error())
+		vii.WriteError(w, http.StatusInternalServerError, "Error deleting file: "+err.Error())
 		return
 	}
 
-	// Redirect back to the view page (or the files list, but staying on the view confirms the save and lets them keep editing)
-	// We can add a success message or query param if we had a flash message system, but for now a simple redirect is fine.
-	http.Redirect(w, r, "/admin/files/view?path="+relPath, http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/files", http.StatusSeeOther)
 }

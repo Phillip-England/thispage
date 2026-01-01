@@ -28,9 +28,9 @@ func GetAdminFileView(w http.ResponseWriter, r *http.Request) {
 	// clean the path to resolve .. etc
 	relPath = filepath.Clean(relPath)
 	
-    // Security: Only allow partials/, templates/, and static/
+    // Security: Only allow partials/ and templates/
     allowed := false
-    for _, prefix := range []string{"partials", "templates", "static"} {
+    for _, prefix := range []string{"partials", "templates"} {
         // We use string concatenation with separator to ensure we match directory boundaries
         // or exact match if we allowed top-level files (which we don't effectively, as we only iterate those dirs)
         // clean path "partials/file.html" starts with "partials"
@@ -42,7 +42,7 @@ func GetAdminFileView(w http.ResponseWriter, r *http.Request) {
     
     // Check for forward slash style too if running on windows but using slash urls
     if !allowed {
-        for _, prefix := range []string{"partials/", "templates/", "static/"} {
+        for _, prefix := range []string{"partials/", "templates/"} {
              if strings.HasPrefix(filepath.ToSlash(relPath), prefix) {
                 allowed = true
                 break

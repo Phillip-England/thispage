@@ -15,6 +15,7 @@ type FileNode struct {
 	Name     string
 	IsDir    bool
 	Path     string
+	Link     string // URL to navigate to when clicked, empty if not clickable
 	Children []*FileNode
 }
 
@@ -32,7 +33,7 @@ func GetAdminFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Only allow specific top-level directories
-	allowedDirs := []string{"partials", "templates", "static"}
+	allowedDirs := []string{"partials", "templates"}
 
 	for _, dirName := range allowedDirs {
 		absDir := filepath.Join(projectPath, dirName)
@@ -88,14 +89,14 @@ func buildTree(absPath string, node *FileNode) error {
         if strings.HasPrefix(entry.Name(), ".") {
             continue
         }
+        
+        relPath := filepath.ToSlash(filepath.Join(node.Path, entry.Name()))
 
 		child := &FileNode{
 			Name:  entry.Name(),
 			IsDir: entry.IsDir(),
-			// Constructing a relative path or using the name; for now, let's store the name.
-            // If we need a clickable path, we might need to build it up.
-            // Let's assume for display we just need structure.
-			Path:  filepath.ToSlash(filepath.Join(node.Path, entry.Name())), 
+			Path:  relPath,
+            Link:  computeLink(relPath, entry.Name(), entry.IsDir()),
 		}
 
 		if entry.IsDir() {
@@ -107,4 +108,29 @@ func buildTree(absPath string, node *FileNode) error {
 		node.Children = append(node.Children, child)
 	}
 	return nil
+}
+
+func computeLink(relPath, name string, isDir bool) string {
+    if isDir {
+        return ""
+    }
+
+    // Templates -> Live URL
+    if strings.HasPrefix(relPath, "templates/") && strings.HasSuffix(name, ".html") {
+        // Remove templates/ prefix
+        subPath := strings.TrimPrefix(relPath, "templates/")
+        return "/" + subPath + "?is_admin=true"
+    }
+
+    // Static -> Direct URL
+    // Images: png, jpg, jpeg, gif, svg, webp
+    ext := strings.ToLower(filepath.Ext(name))
+    switch ext {
+    case ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp":
+         if strings.HasPrefix(relPath, "templates/static/") {
+            return "/static/" + strings.TrimPrefix(relPath, "templates/static/")
+        }
+    }
+
+    return ""
 }

@@ -19,7 +19,7 @@ func New(name string) error {
 	}
 
 	// Define subdirectory paths
-	dirs := []string{"live", "partials", "templates", "templates/posts", "static"}
+	dirs := []string{"live", "partials", "templates", "templates/posts", "templates/static"}
 
 	for _, dir := range dirs {
 		dirPath := filepath.Join(name, dir)

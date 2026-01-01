@@ -69,6 +69,54 @@ func Build(projectPath string) error {
 			if err != nil {
 				return fmt.Errorf("error compiling %s: %w", path, err)
 			}
+
+            // Inject Admin Mode Script
+            adminScript := `
+<script>
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('is_admin') === 'true') {
+      // 1. Show Badge
+      const badge = document.createElement('div');
+      badge.textContent = 'Admin Mode';
+      badge.style.position = 'fixed';
+      badge.style.bottom = '10px';
+      badge.style.right = '10px';
+      badge.style.backgroundColor = '#ef4444';
+      badge.style.color = 'white';
+      badge.style.padding = '4px 8px';
+      badge.style.borderRadius = '4px';
+      badge.style.fontSize = '12px';
+      badge.style.fontFamily = 'sans-serif';
+      badge.style.zIndex = '9999';
+      badge.style.pointerEvents = 'none';
+      badge.style.opacity = '0.8';
+      document.body.appendChild(badge);
+
+      // 2. Intercept Links to Persist Admin State
+      document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (link && link.href) {
+            const url = new URL(link.href, window.location.origin);
+            // Only modify internal links
+            if (url.origin === window.location.origin) {
+                // specific check to avoid duplicating or messing up non-nav links
+                if (!url.searchParams.has('is_admin')) {
+                    url.searchParams.set('is_admin', 'true');
+                    link.href = url.toString();
+                }
+            }
+        }
+      });
+    }
+  })();
+</script>`
+            if strings.Contains(compiledContent, "</body>") {
+                compiledContent = strings.Replace(compiledContent, "</body>", adminScript+"</body>", 1)
+            } else {
+                compiledContent += adminScript
+            }
+
 			destPath := filepath.Join(livePath, relativePath)
 			compiledFiles[destPath] = compiledContent
 		}

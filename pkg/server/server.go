@@ -1,8 +1,8 @@
 package server
 
 import (
+	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/phillip-england/thispage/pkg/keys"
@@ -28,8 +28,48 @@ func Serve(projectPath string) error {
 
 	app.Use(vii.Logger)
 	
-	app.ServeDir("/", liveDirPath)
-	app.ServeDir("/static", path.Join(cwd, "static"))
+	// Serve User Project Static Files
+	app.ServeDir("/static", filepath.Join(absProjectPath, "templates", "static"))
+	
+	// Serve Admin Interface Static Files (from tool root)
+	app.ServeDir("/admin/assets", filepath.Join(cwd, "static"))
+
+    // Custom handler for live directory to support clean URLs (extensionless .html)
+    app.Handle("GET /", func(w http.ResponseWriter, r *http.Request) {
+        urlPath := r.URL.Path
+        // If path is just "/", serve index.html (handled by http.ServeFile usually, but let's be explicit or safe)
+        
+        fsPath := filepath.Join(liveDirPath, urlPath)
+
+        // 1. Check if exact path exists
+        info, err := os.Stat(fsPath)
+        if err == nil {
+            if info.IsDir() {
+                // If directory, try index.html
+                indexPath := filepath.Join(fsPath, "index.html")
+                if _, err := os.Stat(indexPath); err == nil {
+                    http.ServeFile(w, r, indexPath)
+                    return
+                }
+                // If no index.html, 404 or list dir (let's 404 for security)
+                http.NotFound(w, r)
+                return
+            }
+            // It's a file, serve it
+            http.ServeFile(w, r, fsPath)
+            return
+        }
+
+        // 2. Check if path + .html exists
+        htmlPath := fsPath + ".html"
+        if _, err := os.Stat(htmlPath); err == nil {
+            http.ServeFile(w, r, htmlPath)
+            return
+        }
+
+        // 3. Not found
+        http.NotFound(w, r)
+    })
 
 	app.Handle("GET /admin", routes.GetAdmin)
 	app.Handle("POST /admin", routes.PostAdmin)
@@ -37,6 +77,10 @@ func Serve(projectPath string) error {
 	app.Handle("GET /admin/files", routes.GetAdminFiles)
 	app.Handle("GET /admin/files/view", routes.GetAdminFileView)
 	app.Handle("POST /admin/files/save", routes.PostAdminFileSave)
+	app.Handle("POST /admin/files/upload", routes.PostAdminFileUpload)
+	app.Handle("POST /admin/files/delete", routes.PostAdminFileDelete)
+	app.Handle("POST /admin/files/rename", routes.PostAdminFileRename)
+	app.Handle("POST /admin/files/create", routes.PostAdminFileCreate)
 	app.Handle("GET /admin/logout", routes.GetAdminLogout)
 
 	return app.Serve("8080")
