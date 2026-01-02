@@ -1,8 +1,10 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/phillip-england/thispage/pkg/keys"
@@ -18,6 +20,27 @@ func Serve(projectPath string) error {
 
 	absProjectPath := filepath.Join(cwd, projectPath)
 	liveDirPath := filepath.Join(absProjectPath, "live")
+
+    // Check for Tailwind CSS
+    if _, err := exec.LookPath("tailwindcss"); err == nil {
+        fmt.Println("Tailwind CSS found. Starting watch process...")
+        inputPath := filepath.Join(absProjectPath, "static", "input.css")
+        outputPath := filepath.Join(absProjectPath, "static", "output.css")
+        
+        cmd := exec.Command("tailwindcss", "-i", inputPath, "-o", outputPath, "--watch")
+        cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr
+        
+        go func() {
+            if err := cmd.Run(); err != nil {
+                fmt.Printf("Tailwind CSS process exited with error: %v\n", err)
+            }
+        }()
+    } else {
+        fmt.Println("WARNING: Tailwind CSS not found.")
+        fmt.Println("To enable automatic CSS compilation, please install the standalone executable:")
+        fmt.Println("https://tailwindcss.com/blog/standalone-cli")
+    }
 	
 	app := vii.NewApp()
 	app.SetContext(keys.ProjectPath, absProjectPath)
