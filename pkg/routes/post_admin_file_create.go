@@ -34,30 +34,40 @@ func PostAdminFileCreate(w http.ResponseWriter, r *http.Request) {
     // Combine dir and filename
     relPath := filepath.Join(destDir, filename)
 	relPath = filepath.Clean(relPath)
-	
-    // Security Check
+	slashPath := filepath.ToSlash(relPath)
+
+    // Security: Validate file type based on directory
     allowed := false
-    for _, prefix := range []string{"partials", "templates"} {
-        if strings.HasPrefix(relPath, prefix+string(os.PathSeparator)) || relPath == prefix {
-            allowed = true
-            break
-        }
-    }
-     if !allowed {
-        for _, prefix := range []string{"partials/", "templates/"} {
-             if strings.HasPrefix(filepath.ToSlash(relPath), prefix) {
-                allowed = true
-                break
-            }
-        }
-    }
+    
+    if strings.HasPrefix(slashPath, "templates/static/") {
+		ext := strings.ToLower(filepath.Ext(slashPath))
+		switch ext {
+		case ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp":
+			allowed = true
+		}
+	} else if strings.HasPrefix(slashPath, "templates/") {
+		if strings.HasSuffix(slashPath, ".html") {
+			allowed = true
+		}
+	} else if strings.HasPrefix(slashPath, "partials/") {
+		if strings.HasSuffix(slashPath, ".html") {
+			allowed = true
+		}
+	}
 
 	if !allowed {
-		vii.WriteError(w, http.StatusForbidden, "Access denied: Restricted directory.")
+		vii.WriteError(w, http.StatusForbidden, "Access denied: Invalid file type for this directory.")
 		return
 	}
 
 	absPath := filepath.Join(projectPath, relPath)
+    
+    // Path traversal check
+    if !strings.HasPrefix(absPath, projectPath) {
+        vii.WriteError(w, http.StatusForbidden, "Access denied: Path traversal detected.")
+        return
+    }
+
     absDir := filepath.Dir(absPath)
 
     // Ensure directory exists (if they typed a new folder path in filename e.g. "subdir/file.txt")

@@ -25,5 +25,5 @@ func PostAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Success
-	vii.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+	vii.Redirect(w, r, "/admin/files", http.StatusSeeOther)
 }

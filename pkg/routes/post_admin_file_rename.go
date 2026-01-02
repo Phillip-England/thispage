@@ -30,17 +30,34 @@ func PostAdminFileRename(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate Old Path
 	oldRelPath = filepath.Clean(oldRelPath)
-    if !isPathAllowed(oldRelPath) {
-        vii.WriteError(w, http.StatusForbidden, "Access denied: Restricted directory.")
+    slashOldPath := filepath.ToSlash(oldRelPath)
+    
+    // Prevent renaming root dirs
+    if slashOldPath == "templates" || slashOldPath == "partials" || slashOldPath == "templates/static" {
+         vii.WriteError(w, http.StatusForbidden, "Access denied: Cannot rename root directories.")
+		 return
+    }
+
+	absOldPath := filepath.Join(projectPath, oldRelPath)
+    info, err := os.Stat(absOldPath)
+    if err != nil {
+         if os.IsNotExist(err) {
+            vii.WriteError(w, http.StatusNotFound, "File not found")
+            return
+        }
+		vii.WriteError(w, http.StatusInternalServerError, "Error accessing file: "+err.Error())
+		return
+    }
+    isDir := info.IsDir()
+
+    // Validate Old Path
+    if !isPathAllowed(oldRelPath, isDir) {
+        vii.WriteError(w, http.StatusForbidden, "Access denied: Restricted source.")
 		return
     }
 
     // Construct New Path
-    // We assume newName is just the filename, not a full path.
-    // If user provides a path separator in newName, we reject or handle it.
-    // Let's strictly check for just a filename for safety/simplicity first.
     if strings.Contains(newName, "/") || strings.Contains(newName, "\\") {
         vii.WriteError(w, http.StatusBadRequest, "Invalid new name: Must be a filename, not a path.")
 		return
@@ -49,12 +66,12 @@ func PostAdminFileRename(w http.ResponseWriter, r *http.Request) {
     parentDir := filepath.Dir(oldRelPath)
     newRelPath := filepath.Join(parentDir, newName)
 
-    if !isPathAllowed(newRelPath) {
-        vii.WriteError(w, http.StatusForbidden, "Access denied: Target directory restricted.")
+    // Validate New Path
+    if !isPathAllowed(newRelPath, isDir) {
+        vii.WriteError(w, http.StatusForbidden, "Access denied: Restricted destination (invalid type or directory).")
 		return
     }
 
-	absOldPath := filepath.Join(projectPath, oldRelPath)
 	absNewPath := filepath.Join(projectPath, newRelPath)
 
     // Check if destination already exists
@@ -63,7 +80,7 @@ func PostAdminFileRename(w http.ResponseWriter, r *http.Request) {
 		return
     }
 
-	err := os.Rename(absOldPath, absNewPath)
+	err = os.Rename(absOldPath, absNewPath)
 	if err != nil {
 		vii.WriteError(w, http.StatusInternalServerError, "Error renaming file: "+err.Error())
 		return
@@ -72,22 +89,33 @@ func PostAdminFileRename(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/files", http.StatusSeeOther)
 }
 
-// Helper to reuse the security logic
-func isPathAllowed(relPath string) bool {
-    allowed := false
-    for _, prefix := range []string{"partials", "templates"} {
-        if strings.HasPrefix(relPath, prefix+string(os.PathSeparator)) || relPath == prefix {
-            allowed = true
-            break
+func isPathAllowed(relPath string, isDir bool) bool {
+    slashPath := filepath.ToSlash(relPath)
+
+    // If it's a directory, we mainly check if it's within permitted roots
+    if isDir {
+        if strings.HasPrefix(slashPath, "templates/") || strings.HasPrefix(slashPath, "partials/") || slashPath == "templates" || slashPath == "partials" {
+            return true
         }
+        return false
     }
-     if !allowed {
-        for _, prefix := range []string{"partials/", "templates/"} {
-             if strings.HasPrefix(filepath.ToSlash(relPath), prefix) {
-                allowed = true
-                break
-            }
-        }
-    }
-    return allowed
+
+    // File rules
+    if strings.HasPrefix(slashPath, "templates/static/") {
+		ext := strings.ToLower(filepath.Ext(slashPath))
+		switch ext {
+		case ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp":
+			return true
+		}
+	} else if strings.HasPrefix(slashPath, "templates/") {
+		if strings.HasSuffix(slashPath, ".html") {
+			return true
+		}
+	} else if strings.HasPrefix(slashPath, "partials/") {
+		if strings.HasSuffix(slashPath, ".html") {
+			return true
+		}
+	}
+    
+    return false
 }

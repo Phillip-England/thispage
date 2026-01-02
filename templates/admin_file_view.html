@@ -7,34 +7,80 @@
   <title>View File - {{.FilePath}}</title>
 </head>
 <body class="bg-black text-white font-sans antialiased min-h-screen p-10 flex flex-col">
+  {{if .IsEditable}}
   <form action="/admin/files/save" method="POST" class="flex flex-col flex-grow h-full">
+  {{else}}
+  <div class="flex flex-col flex-grow h-full">
+  {{end}}
       <input type="hidden" name="path" value="{{.FilePath}}">
       
       <header class="flex justify-between items-center mb-6 border-b border-neutral-800 pb-6 shrink-0">
         <div>
-          <h1 class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-medium">Dashboard</h1>
+          <h1 class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-medium">Admin</h1>
           <h2 class="text-xl font-bold mt-2 truncate max-w-2xl">{{.FilePath}}</h2>
           <p class="text-[9px] text-neutral-600 mt-1 font-mono tracking-widest">{{.ProjectPath}}</p>
         </div>
         <div class="flex gap-4 items-center">
+            {{if .IsEditable}}
             <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white text-xs uppercase tracking-widest py-2 px-6 rounded transition-colors font-bold">
                 Save Changes
             </button>
+            {{end}}
+
+            {{if .LiveURL}}
+            <div class="h-6 w-px bg-neutral-800"></div>
+            <a href="{{.LiveURL}}?is_admin=true" target="_blank" class="bg-neutral-800 hover:bg-neutral-700 text-white text-xs uppercase tracking-widest py-2 px-6 rounded transition-colors font-bold border border-neutral-700">
+                Visit
+            </a>
+            {{end}}
+
+            {{if .IsImage}}
+             <!-- We need to close the outer div/form momentarily if we were nesting, but we aren't for image -->
+             <!-- Image delete form is separate -->
+            {{end}}
+            
             <div class="h-6 w-px bg-neutral-800"></div>
             <a href="/admin/files" class="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
-                Cancel
+                Back
             </a>
+            
+             {{if .IsImage}}
+             <div class="h-6 w-px bg-neutral-800"></div>
+             <button type="submit" form="delete-form" class="bg-red-900 hover:bg-red-800 text-white text-xs uppercase tracking-widest py-2 px-6 rounded transition-colors font-bold border border-red-800">
+                Delete
+            </button>
+             {{end}}
         </div>
       </header>
     
       <main class="flex-grow grid grid-rows-1 min-h-0 relative group">
-        <div class="border border-neutral-800 p-1 bg-neutral-900 relative">
+        <div class="border border-neutral-800 p-1 bg-neutral-900 relative h-full">
+            {{if .IsEditable}}
             <textarea name="content" class="w-full h-full block bg-black text-neutral-300 font-mono text-sm p-4 outline-none resize-none border-none focus:bg-neutral-950 transition-colors placeholder-neutral-700" spellcheck="false">{{.Content}}</textarea>
-        </div>
-        <div class="absolute bottom-4 right-4 text-xs text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Editable
+            <div class="absolute bottom-4 right-4 text-xs text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                Editable
+            </div>
+            {{else if .IsImage}}
+            <div class="w-full h-full bg-black flex items-center justify-center overflow-auto p-4">
+                <img src="{{.Src}}" alt="{{.FilePath}}" class="max-w-full max-h-full object-contain border border-neutral-800">
+            </div>
+            {{else}}
+            <div class="flex items-center justify-center h-full text-neutral-500">
+                File type not supported for viewing.
+            </div>
+            {{end}}
         </div>
       </main>
+  {{if .IsEditable}}
   </form>
+  {{else}}
+  </div>
+  {{end}}
+
+  {{if .IsImage}}
+  <form id="delete-form" action="/admin/files/delete" method="POST" onsubmit="return confirm('Are you sure you want to delete this image?');" class="hidden">
+      <input type="hidden" name="path" value="{{.FilePath}}">
+  </form>
+  {{end}}
 </body>
 </html>

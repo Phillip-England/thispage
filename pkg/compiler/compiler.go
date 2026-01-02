@@ -70,31 +70,138 @@ func Build(projectPath string) error {
 				return fmt.Errorf("error compiling %s: %w", path, err)
 			}
 
+            // Inject data-source-path into body
+            dataSourcePath := filepath.Join("templates", relativePath)
+            if strings.Contains(compiledContent, "<body") {
+                compiledContent = strings.Replace(compiledContent, "<body", fmt.Sprintf("<body data-source-path=\"%s\"", dataSourcePath), 1)
+            }
+
             // Inject Admin Mode Script
             adminScript := `
 <script>
   (function() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('is_admin') === 'true') {
-      // 1. Show Badge
-      const badge = document.createElement('div');
-      badge.textContent = 'Admin Mode';
-      badge.style.position = 'fixed';
-      badge.style.bottom = '10px';
-      badge.style.right = '10px';
-      badge.style.backgroundColor = '#ef4444';
-      badge.style.color = 'white';
-      badge.style.padding = '4px 8px';
-      badge.style.borderRadius = '4px';
-      badge.style.fontSize = '12px';
-      badge.style.fontFamily = 'sans-serif';
-      badge.style.zIndex = '9999';
-      badge.style.pointerEvents = 'none';
-      badge.style.opacity = '0.8';
-      document.body.appendChild(badge);
+      // 1. Inject Styles for Blocks
+      const style = document.createElement('style');
+      style.textContent = 
+        ".thispage-block:hover {" +
+            "outline: 2px solid #3b82f6;" +
+            "cursor: pointer;" +
+            "position: relative;" +
+        "}" +
+        ".thispage-block:hover::after {" +
+            "content: 'Edit';" +
+            "position: absolute;" +
+            "top: -20px;" +
+            "right: 0;" +
+            "background: #3b82f6;" +
+            "color: white;" +
+            "font-size: 10px;" +
+            "padding: 2px 6px;" +
+            "border-radius: 2px;" +
+            "font-family: sans-serif;" +
+            "pointer-events: none;" +
+        "}";
+      document.head.appendChild(style);
 
-      // 2. Intercept Links to Persist Admin State
+      // 2. Toggle Admin UI Elements
+      document.querySelectorAll('.thispage-add-btn').forEach(el => el.classList.remove('hidden'));
+      document.querySelectorAll('.empty-state').forEach(el => el.style.display = 'none');
+
+      // 3. Inject Back to Admin Button
+      const sourcePath = document.body.getAttribute('data-source-path');
+      if (sourcePath) {
+          const backBtn = document.createElement('a');
+          backBtn.href = '/admin/files/view?path=' + encodeURIComponent(sourcePath);
+          backBtn.textContent = 'Back to Edit';
+          backBtn.style.cssText = 'position:fixed;bottom:2rem;left:2rem;z-index:9999;background:#171717;color:white;padding:0.5rem 1rem;border-radius:0.375rem;font-family:sans-serif;font-size:0.875rem;text-decoration:none;border:1px solid #404040;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);';
+          backBtn.onmouseover = () => backBtn.style.background = '#262626';
+          backBtn.onmouseout = () => backBtn.style.background = '#171717';
+          document.body.appendChild(backBtn);
+      }
+
+      // 4. Intercept Links to Persist Admin State
       document.addEventListener('click', function(e) {
+        // Add Button Handler
+        if (e.target.closest('.thispage-add-btn')) {
+             e.preventDefault();
+             e.stopPropagation();
+             
+             // Fetch partials
+             fetch('/admin/api/partials')
+                .then(res => res.json())
+                .then(data => {
+                    // Create and show modal
+                    let modal = document.getElementById('partial-modal');
+                    if (!modal) {
+                        modal = document.createElement('div');
+                        modal.id = 'partial-modal';
+                        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+                        
+                        const content = document.createElement('div');
+                        content.style.cssText = 'background:#171717;border:1px solid #404040;padding:24px;border-radius:8px;width:300px;color:white;';
+                        
+                        const title = document.createElement('h3');
+                        title.textContent = 'Insert Block';
+                        title.style.cssText = 'font-weight:bold;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;font-size:12px;color:#a3a3a3;';
+                        content.appendChild(title);
+                        
+                        const list = document.createElement('ul');
+                        list.id = 'partial-list';
+                        content.appendChild(list);
+
+                        const close = document.createElement('button');
+                        close.textContent = 'Cancel';
+                        close.style.cssText = 'margin-top:16px;width:100%;padding:8px;background:transparent;border:1px solid #404040;color:#a3a3a3;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px;';
+                        close.onclick = () => modal.style.display = 'none';
+                        content.appendChild(close);
+                        
+                        modal.appendChild(content);
+                        document.body.appendChild(modal);
+                    }
+                    
+                    const list = document.getElementById('partial-list');
+                    list.innerHTML = ''; // clear
+                    
+                    data.files.forEach(file => {
+                        const item = document.createElement('li');
+                        item.textContent = file;
+                        item.style.cssText = 'padding:12px;background:#262626;margin-bottom:8px;cursor:pointer;border-radius:4px;font-size:14px;';
+                        item.onmouseover = () => item.style.background = '#404040';
+                        item.onmouseout = () => item.style.background = '#262626';
+                        
+                        item.onclick = () => {
+                             const sourcePath = document.body.getAttribute('data-source-path');
+                             fetch('/admin/api/insert-partial', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                                body: 'target_file=' + encodeURIComponent(sourcePath) + '&partial_name=' + encodeURIComponent('partials/' + file)
+                             }).then(res => {
+                                 if (res.ok) {
+                                     window.location.reload();
+                                 } else {
+                                     alert('Error inserting partial');
+                                 }
+                             });
+                        };
+                        list.appendChild(item);
+                    });
+                    
+                    modal.style.display = 'flex';
+                });
+             return;
+        }
+
+        // Block Click Handler
+        if (e.target.classList.contains('thispage-block')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Block clicked:", e.target);
+            alert("Edit block functionality coming soon!");
+            return;
+        }
+
         const link = e.target.closest('a');
         if (link && link.href) {
             const url = new URL(link.href, window.location.origin);

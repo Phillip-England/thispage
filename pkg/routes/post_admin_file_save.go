@@ -30,28 +30,32 @@ func PostAdminFileSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Security Check (same as View)
+	// Security Check
 	relPath = filepath.Clean(relPath)
+	slashPath := filepath.ToSlash(relPath)
 
-    // Security: Only allow partials/ and templates/
+    // Security: Validate file type based on directory
     allowed := false
-    for _, prefix := range []string{"partials", "templates"} {
-        if strings.HasPrefix(relPath, prefix+string(os.PathSeparator)) || relPath == prefix {
-            allowed = true
-            break
-        }
-    }
-     if !allowed {
-        for _, prefix := range []string{"partials/", "templates/"} {
-             if strings.HasPrefix(filepath.ToSlash(relPath), prefix) {
-                allowed = true
-                break
-            }
-        }
-    }
+    
+    if strings.HasPrefix(slashPath, "templates/static/") {
+		ext := strings.ToLower(filepath.Ext(slashPath))
+		switch ext {
+		case ".css", ".js":
+            // Only text-based assets are editable
+			allowed = true
+		}
+	} else if strings.HasPrefix(slashPath, "templates/") {
+		if strings.HasSuffix(slashPath, ".html") {
+			allowed = true
+		}
+	} else if strings.HasPrefix(slashPath, "partials/") {
+		if strings.HasSuffix(slashPath, ".html") {
+			allowed = true
+		}
+	}
 
     if !allowed {
-        vii.WriteError(w, http.StatusForbidden, "Access denied: Restricted directory.")
+        vii.WriteError(w, http.StatusForbidden, "Access denied: Invalid file type or directory for text editing.")
         return
     }
 
@@ -71,7 +75,6 @@ func PostAdminFileSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Redirect back to the view page (or the files list, but staying on the view confirms the save and lets them keep editing)
-	// We can add a success message or query param if we had a flash message system, but for now a simple redirect is fine.
+	// Redirect back to the view page
 	http.Redirect(w, r, "/admin/files/view?path="+relPath, http.StatusSeeOther)
 }

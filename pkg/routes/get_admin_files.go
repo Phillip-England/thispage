@@ -21,10 +21,10 @@ type FileNode struct {
 
 func GetAdminFiles(w http.ResponseWriter, r *http.Request) {
 	projectPath, ok := vii.GetContext(keys.ProjectPath, r).(string)
-    if !ok {
-        vii.WriteError(w, http.StatusInternalServerError, "Project path not found in context")
-        return
-    }
+	if !ok {
+		vii.WriteError(w, http.StatusInternalServerError, "Project path not found in context")
+		return
+	}
 
 	root := &FileNode{
 		Name:  filepath.Base(projectPath),
@@ -37,7 +37,7 @@ func GetAdminFiles(w http.ResponseWriter, r *http.Request) {
 
 	for _, dirName := range allowedDirs {
 		absDir := filepath.Join(projectPath, dirName)
-		
+
 		// Check if directory exists
 		info, err := os.Stat(absDir)
 		if err != nil || !info.IsDir() {
@@ -50,7 +50,7 @@ func GetAdminFiles(w http.ResponseWriter, r *http.Request) {
 			Path:  dirName, // Relative path for links
 		}
 
-		if err := buildTree(absDir, dirNode); err != nil {
+		if err := buildTree(absDir, dirNode, dirName); err != nil {
 			vii.WriteError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -59,15 +59,15 @@ func GetAdminFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := vii.Render(w, r, "admin_files.html", map[string]interface{}{
-		"Files": root,
-        "ProjectPath": projectPath,
+		"Files":       root,
+		"ProjectPath": projectPath,
 	})
 	if err != nil {
 		vii.WriteError(w, http.StatusInternalServerError, err.Error())
 	}
 }
 
-func buildTree(absPath string, node *FileNode) error {
+func buildTree(absPath string, node *FileNode, rootDir string) error {
 	entries, err := os.ReadDir(absPath)
 	if err != nil {
 		return err
@@ -85,22 +85,29 @@ func buildTree(absPath string, node *FileNode) error {
 	})
 
 	for _, entry := range entries {
-        // Skip hidden files/dirs (optional, but usually good)
-        if strings.HasPrefix(entry.Name(), ".") {
-            continue
-        }
-        
-        relPath := filepath.ToSlash(filepath.Join(node.Path, entry.Name()))
+		// Skip hidden files/dirs
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+
+		relPath := filepath.ToSlash(filepath.Join(node.Path, entry.Name()))
+
+		// Filter logic
+		if !entry.IsDir() {
+			if !isAllowedFile(relPath) {
+				continue
+			}
+		}
 
 		child := &FileNode{
 			Name:  entry.Name(),
 			IsDir: entry.IsDir(),
 			Path:  relPath,
-            Link:  computeLink(relPath, entry.Name(), entry.IsDir()),
+			Link:  computeLink(relPath, entry.Name(), entry.IsDir()),
 		}
 
 		if entry.IsDir() {
-			if err := buildTree(filepath.Join(absPath, entry.Name()), child); err != nil {
+			if err := buildTree(filepath.Join(absPath, entry.Name()), child, rootDir); err != nil {
 				return err
 			}
 		}
@@ -110,27 +117,38 @@ func buildTree(absPath string, node *FileNode) error {
 	return nil
 }
 
+func isAllowedFile(relPath string) bool {
+	// Normalize separators
+	relPath = filepath.ToSlash(relPath)
+
+	// Check for static directory (inside templates)
+	if strings.HasPrefix(relPath, "templates/static/") {
+		ext := strings.ToLower(filepath.Ext(relPath))
+		switch ext {
+		case ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp":
+			return true
+		}
+		return false
+	}
+
+	// Check for templates directory (excluding static which is handled above)
+	if strings.HasPrefix(relPath, "templates/") {
+		return strings.HasSuffix(relPath, ".html")
+	}
+
+	// Check for partials directory
+	if strings.HasPrefix(relPath, "partials/") {
+		return strings.HasSuffix(relPath, ".html")
+	}
+
+	return false
+}
+
 func computeLink(relPath, name string, isDir bool) string {
-    if isDir {
-        return ""
-    }
-
-    // Templates -> Live URL
-    if strings.HasPrefix(relPath, "templates/") && strings.HasSuffix(name, ".html") {
-        // Remove templates/ prefix
-        subPath := strings.TrimPrefix(relPath, "templates/")
-        return "/" + subPath + "?is_admin=true"
-    }
-
-    // Static -> Direct URL
-    // Images: png, jpg, jpeg, gif, svg, webp
-    ext := strings.ToLower(filepath.Ext(name))
-    switch ext {
-    case ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp":
-         if strings.HasPrefix(relPath, "templates/static/") {
-            return "/static/" + strings.TrimPrefix(relPath, "templates/static/")
-        }
-    }
-
-    return ""
+	if isDir {
+		return ""
+	}
+    
+    // Always go to view/edit page
+    return "/admin/files/view?path=" + relPath
 }

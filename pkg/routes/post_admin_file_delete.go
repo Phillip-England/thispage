@@ -30,39 +30,68 @@ func PostAdminFileDelete(w http.ResponseWriter, r *http.Request) {
 
 	// Security Check
 	relPath = filepath.Clean(relPath)
+    slashPath := filepath.ToSlash(relPath)
 	
-    // Security: Only allow partials/ and templates/
-    allowed := false
-    for _, prefix := range []string{"partials", "templates"} {
-        if strings.HasPrefix(relPath, prefix+string(os.PathSeparator)) || relPath == prefix {
-            allowed = true
-            break
-        }
+    // Prevent deleting root directories
+    if slashPath == "templates" || slashPath == "partials" || slashPath == "templates/static" {
+        vii.WriteError(w, http.StatusForbidden, "Access denied: Cannot delete root directories.")
+        return
     }
-     if !allowed {
-        for _, prefix := range []string{"partials/", "templates/"} {
-             if strings.HasPrefix(filepath.ToSlash(relPath), prefix) {
-                allowed = true
-                break
+
+	absPath := filepath.Join(projectPath, relPath)
+    
+    // Path traversal check
+    if !strings.HasPrefix(absPath, projectPath) {
+        vii.WriteError(w, http.StatusForbidden, "Access denied: Path traversal detected.")
+        return
+    }
+
+    // Verify it exists
+    info, err := os.Stat(absPath)
+    if err != nil {
+        if os.IsNotExist(err) {
+            vii.WriteError(w, http.StatusNotFound, "File or directory not found")
+            return
+        }
+         vii.WriteError(w, http.StatusInternalServerError, "Error accessing path: "+err.Error())
+         return
+    }
+
+    // Security: Validate file type based on directory
+    allowed := false
+    
+    // Check prefix first
+    if strings.HasPrefix(slashPath, "templates/") || strings.HasPrefix(slashPath, "partials/") {
+        if info.IsDir() {
+            // Allow deleting subdirectories
+            allowed = true
+        } else {
+             // File checks
+             if strings.HasPrefix(slashPath, "templates/static/") {
+                ext := strings.ToLower(filepath.Ext(slashPath))
+                switch ext {
+                case ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp":
+                    allowed = true
+                }
+            } else if strings.HasPrefix(slashPath, "templates/") {
+                if strings.HasSuffix(slashPath, ".html") {
+                    allowed = true
+                }
+            } else if strings.HasPrefix(slashPath, "partials/") {
+                if strings.HasSuffix(slashPath, ".html") {
+                    allowed = true
+                }
             }
         }
     }
 
 	if !allowed {
-		vii.WriteError(w, http.StatusForbidden, "Access denied: Restricted directory.")
+		vii.WriteError(w, http.StatusForbidden, "Access denied: Invalid file type or directory.")
 		return
 	}
 
-	absPath := filepath.Join(projectPath, relPath)
-
-    // Verify it exists before trying to delete (optional but good for error messaging)
-    if _, err := os.Stat(absPath); os.IsNotExist(err) {
-        vii.WriteError(w, http.StatusNotFound, "File or directory not found")
-        return
-    }
-
 	// Delete recursively
-	err := os.RemoveAll(absPath)
+	err = os.RemoveAll(absPath)
 	if err != nil {
 		vii.WriteError(w, http.StatusInternalServerError, "Error deleting file: "+err.Error())
 		return
