@@ -80,6 +80,7 @@ func Serve(projectPath string) error {
 	app.Handle("POST /admin/files/delete", routes.PostAdminFileDelete)
 	app.Handle("POST /admin/files/rename", routes.PostAdminFileRename)
 	app.Handle("POST /admin/files/create", routes.PostAdminFileCreate)
+	app.Handle("POST /admin/files/create-dir", routes.PostAdminDirCreate)
     
     // API Routes
     app.Handle("GET /admin/api/partials", routes.GetAdminPartials)

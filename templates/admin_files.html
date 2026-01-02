@@ -35,8 +35,11 @@
         <button onclick="document.getElementById('upload-form').classList.toggle('hidden'); document.getElementById('create-form').classList.add('hidden')" class="text-xs uppercase tracking-wider bg-blue-900 hover:bg-blue-800 text-white py-2 px-4 border border-blue-800 transition-colors ml-auto">
             Upload File
         </button>
-        <button onclick="document.getElementById('create-form').classList.toggle('hidden'); document.getElementById('upload-form').classList.add('hidden')" class="text-xs uppercase tracking-wider bg-green-900 hover:bg-green-800 text-white py-2 px-4 border border-green-800 transition-colors ml-2">
+        <button onclick="document.getElementById('create-form').classList.toggle('hidden'); document.getElementById('upload-form').classList.add('hidden'); document.getElementById('create-dir-form').classList.add('hidden')" class="text-xs uppercase tracking-wider bg-green-900 hover:bg-green-800 text-white py-2 px-4 border border-green-800 transition-colors ml-2">
             New File
+        </button>
+        <button onclick="document.getElementById('create-dir-form').classList.toggle('hidden'); document.getElementById('upload-form').classList.add('hidden'); document.getElementById('create-form').classList.add('hidden')" class="text-xs uppercase tracking-wider bg-purple-900 hover:bg-purple-800 text-white py-2 px-4 border border-purple-800 transition-colors ml-2">
+            New Folder
         </button>
     </div>
 
@@ -44,7 +47,11 @@
         <form action="/admin/files/upload" method="POST" enctype="multipart/form-data" class="flex gap-4 items-end">
             <div>
                 <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-2">Destination</label>
-                <input type="text" name="directory" value="templates/static" class="bg-black border border-neutral-800 text-white text-sm px-3 py-2 w-48 focus:border-neutral-600 outline-none" placeholder="e.g. templates/static/img">
+                <select name="directory" class="bg-black border border-neutral-800 text-white text-sm px-3 py-2 w-48 focus:border-neutral-600 outline-none h-[38px]">
+                    {{range .Directories}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{end}}
+                </select>
             </div>
             <div>
                  <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-2">File</label>
@@ -57,15 +64,22 @@
     </div>
 
     <div id="create-form" class="hidden mb-6 border border-neutral-800 p-4 bg-neutral-900">
-        <form action="/admin/files/create" method="POST" class="flex flex-col gap-4">
+        <form action="/admin/files/create" method="POST" class="flex flex-col gap-4" onsubmit="return handleCreateSubmit(this)">
             <div class="flex gap-4 items-end">
                 <div>
                     <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-2">Directory</label>
-                    <input type="text" name="directory" value="templates" class="bg-black border border-neutral-800 text-white text-sm px-3 py-2 w-48 focus:border-neutral-600 outline-none" placeholder="e.g. templates/posts">
+                    <select name="directory" id="create-dir" onchange="updateCreateHint()" class="bg-black border border-neutral-800 text-white text-sm px-3 py-2 w-48 focus:border-neutral-600 outline-none h-[38px]">
+                        {{range .Directories}}
+                        <option value="{{.}}">{{.}}</option>
+                        {{end}}
+                    </select>
                 </div>
                 <div class="flex-grow">
                      <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-2">Filename</label>
-                    <input type="text" name="filename" required class="bg-black border border-neutral-800 text-white text-sm px-3 py-2 w-full focus:border-neutral-600 outline-none" placeholder="new_file.html">
+                    <div class="relative">
+                        <input type="text" name="filename" id="create-filename" oninput="updateCreateHint()" required class="bg-black border border-neutral-800 text-white text-sm px-3 py-2 w-full focus:border-neutral-600 outline-none" placeholder="new_file">
+                        <div id="create-hint" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500 pointer-events-none"></div>
+                    </div>
                 </div>
             </div>
             <div>
@@ -78,12 +92,60 @@
         </form>
     </div>
 
+    <div id="create-dir-form" class="hidden mb-6 border border-neutral-800 p-4 bg-neutral-900">
+        <form action="/admin/files/create-dir" method="POST" class="flex gap-4 items-end">
+            <div>
+                <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-2">Parent Directory</label>
+                <select name="parent_directory" class="bg-black border border-neutral-800 text-white text-sm px-3 py-2 w-48 focus:border-neutral-600 outline-none h-[38px]">
+                    {{range .Directories}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="flex-grow">
+                 <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-2">Folder Name</label>
+                <input type="text" name="dirname" required class="bg-black border border-neutral-800 text-white text-sm px-3 py-2 w-full focus:border-neutral-600 outline-none h-[38px]" placeholder="new_folder">
+            </div>
+            <button type="submit" class="bg-white text-black text-xs uppercase tracking-widest py-2 px-6 hover:bg-neutral-200 transition-colors font-bold h-[38px]">
+                Create Folder
+            </button>
+        </form>
+    </div>
+
     <div class="border border-neutral-800 p-6">
         <ul class="text-sm font-mono">
             {{template "fileNode" .Files}}
         </ul>
     </div>
   </main>
+
+  <!-- Rename Modal -->
+  <div id="rename-modal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center">
+      <div class="bg-neutral-900 border border-neutral-800 p-6 w-96 max-w-full">
+          <h3 class="text-lg font-bold mb-4">Rename File</h3>
+          <form action="/admin/files/rename" method="POST" onsubmit="return handleRenameSubmit(this)">
+              <input type="hidden" name="old_path" id="rename-old-path">
+              <input type="hidden" id="rename-extension">
+              
+              <div class="mb-4">
+                  <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-2">New Name</label>
+                  <div class="flex items-center bg-black border border-neutral-800 focus-within:border-neutral-600">
+                      <input type="text" name="new_name" id="rename-new-name" class="bg-transparent text-white text-sm px-3 py-2 w-full outline-none" placeholder="name">
+                      <span id="rename-ext-display" class="text-neutral-500 text-sm pr-3 select-none"></span>
+                  </div>
+              </div>
+              
+              <div class="flex justify-end gap-3">
+                  <button type="button" onclick="document.getElementById('rename-modal').classList.add('hidden')" class="text-xs uppercase tracking-widest text-neutral-400 hover:text-white px-4 py-2">
+                      Cancel
+                  </button>
+                  <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white text-xs uppercase tracking-widest py-2 px-6 rounded transition-colors font-bold">
+                      Rename
+                  </button>
+              </div>
+          </form>
+      </div>
+  </div>
 
   <script>
     function toggleDir(element) {
@@ -96,7 +158,6 @@
             element.classList.toggle('dir-open');
             
             // Save state
-            // If hidden is false, it's open
             const isOpen = !isHidden;
             localStorage.setItem('dir_state_' + path, isOpen);
         }
@@ -124,7 +185,6 @@
         document.querySelectorAll('.dir-header').forEach(el => {
             const path = el.getAttribute('data-path');
             if (path && localStorage.getItem('dir_state_' + path) === 'true') {
-                 // Open it
                  el.classList.add('dir-open');
                  const parentLi = el.closest('li');
                  const childrenUl = parentLi.querySelector('ul');
@@ -132,34 +192,80 @@
             }
         });
     }
-    
-    document.addEventListener('DOMContentLoaded', () => {
-        // Always open root by default or check storage? 
-        // The root has path="/" usually. 
-        // The previous code had:
-        // const rootHeader = document.querySelector('.dir-header');
-        // if (rootHeader) toggleDir(rootHeader);
-        
-        // Let's rely on storage, but default root to open if not set?
-        // Or just restore.
-        restoreState();
-    });
 
-    function renameFile(path, oldName, event) {
-        event.stopPropagation(); // Prevent clicking the directory/file link
-        const newName = prompt("Enter new name for " + oldName + ":", oldName);
-        if (newName && newName !== oldName) {
-            document.getElementById('rename-old-path').value = path;
-            document.getElementById('rename-new-name').value = newName;
-            document.getElementById('rename-form').submit();
+    function updateCreateHint() {
+        const dir = document.getElementById('create-dir').value;
+        const filename = document.getElementById('create-filename').value;
+        const hint = document.getElementById('create-hint');
+        
+        let ext = "";
+        if (dir.startsWith("templates") && !dir.startsWith("templates/static")) {
+            ext = ".html";
+        } else if (dir.startsWith("partials")) {
+            ext = ".html";
+        }
+        
+        if (filename && ext && !filename.endsWith(ext)) {
+            hint.textContent = ext;
+        } else {
+            hint.textContent = "";
         }
     }
-  </script>
 
-  <form id="rename-form" action="/admin/files/rename" method="POST" class="hidden">
-      <input type="hidden" name="old_path" id="rename-old-path">
-      <input type="hidden" name="new_name" id="rename-new-name">
-  </form>
+    function handleCreateSubmit(form) {
+        const dir = document.getElementById('create-dir').value;
+        const filenameInput = document.getElementById('create-filename');
+        let filename = filenameInput.value;
+        
+        let ext = "";
+        if (dir.startsWith("templates") && !dir.startsWith("templates/static")) {
+            ext = ".html";
+        } else if (dir.startsWith("partials")) {
+            ext = ".html";
+        }
+        
+        if (filename && ext && !filename.endsWith(ext)) {
+            filenameInput.value = filename + ext;
+        }
+        return true;
+    }
+
+    function renameFile(path, oldName, event) {
+        event.stopPropagation();
+        
+        const lastDotIndex = oldName.lastIndexOf('.');
+        let namePart = oldName;
+        let extPart = "";
+        
+        if (lastDotIndex > 0) {
+            namePart = oldName.substring(0, lastDotIndex);
+            extPart = oldName.substring(lastDotIndex);
+        }
+        
+        document.getElementById('rename-old-path').value = path;
+        document.getElementById('rename-new-name').value = namePart;
+        document.getElementById('rename-extension').value = extPart;
+        document.getElementById('rename-ext-display').textContent = extPart;
+        
+        document.getElementById('rename-modal').classList.remove('hidden');
+        document.getElementById('rename-new-name').focus();
+    }
+    
+    function handleRenameSubmit(form) {
+        const nameInput = document.getElementById('rename-new-name');
+        const ext = document.getElementById('rename-extension').value;
+        
+        if (nameInput.value && ext && !nameInput.value.endsWith(ext)) {
+            nameInput.value = nameInput.value + ext;
+        }
+        return true;
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        restoreState();
+        updateCreateHint();
+    });
+  </script>
 </body>
 </html>
 

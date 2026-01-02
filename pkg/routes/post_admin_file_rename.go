@@ -57,6 +57,14 @@ func PostAdminFileRename(w http.ResponseWriter, r *http.Request) {
 		return
     }
 
+    // Auto-append extension for files if missing in newName
+    if !isDir {
+        oldExt := filepath.Ext(oldRelPath)
+        if filepath.Ext(newName) == "" {
+            newName += oldExt
+        }
+    }
+
     // Construct New Path
     if strings.Contains(newName, "/") || strings.Contains(newName, "\\") {
         vii.WriteError(w, http.StatusBadRequest, "Invalid new name: Must be a filename, not a path.")

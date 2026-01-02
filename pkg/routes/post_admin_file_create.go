@@ -30,6 +30,14 @@ func PostAdminFileCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    // Auto-append extension logic (Backend fallback/enforcement)
+    destDirSlash := filepath.ToSlash(destDir)
+    if (strings.HasPrefix(destDirSlash, "templates") && !strings.HasPrefix(destDirSlash, "templates/static")) || strings.HasPrefix(destDirSlash, "partials") {
+        if !strings.HasSuffix(filename, ".html") {
+            filename += ".html"
+        }
+    }
+
 	// Validate Path
     // Combine dir and filename
     relPath := filepath.Join(destDir, filename)

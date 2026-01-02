@@ -34,6 +34,8 @@ func GetAdminFiles(w http.ResponseWriter, r *http.Request) {
 
 	// Only allow specific top-level directories
 	allowedDirs := []string{"partials", "templates"}
+    
+    var directories []string
 
 	for _, dirName := range allowedDirs {
 		absDir := filepath.Join(projectPath, dirName)
@@ -49,25 +51,31 @@ func GetAdminFiles(w http.ResponseWriter, r *http.Request) {
 			IsDir: true,
 			Path:  dirName, // Relative path for links
 		}
+        
+        directories = append(directories, dirName)
 
-		if err := buildTree(absDir, dirNode, dirName); err != nil {
+		if err := buildTree(absDir, dirNode, dirName, &directories); err != nil {
 			vii.WriteError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
 		root.Children = append(root.Children, dirNode)
 	}
+    
+    // Sort directories for better UX
+    sort.Strings(directories)
 
 	err := vii.Render(w, r, "admin_files.html", map[string]interface{}{
 		"Files":       root,
 		"ProjectPath": projectPath,
+        "Directories": directories,
 	})
 	if err != nil {
 		vii.WriteError(w, http.StatusInternalServerError, err.Error())
 	}
 }
 
-func buildTree(absPath string, node *FileNode, rootDir string) error {
+func buildTree(absPath string, node *FileNode, rootDir string, dirs *[]string) error {
 	entries, err := os.ReadDir(absPath)
 	if err != nil {
 		return err
@@ -97,7 +105,9 @@ func buildTree(absPath string, node *FileNode, rootDir string) error {
 			if !isAllowedFile(relPath) {
 				continue
 			}
-		}
+		} else {
+             *dirs = append(*dirs, relPath)
+        }
 
 		child := &FileNode{
 			Name:  entry.Name(),
@@ -107,7 +117,7 @@ func buildTree(absPath string, node *FileNode, rootDir string) error {
 		}
 
 		if entry.IsDir() {
-			if err := buildTree(filepath.Join(absPath, entry.Name()), child, rootDir); err != nil {
+			if err := buildTree(filepath.Join(absPath, entry.Name()), child, rootDir, dirs); err != nil {
 				return err
 			}
 		}
