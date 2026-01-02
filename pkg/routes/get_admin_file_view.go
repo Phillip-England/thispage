@@ -34,7 +34,7 @@ func GetAdminFileView(w http.ResponseWriter, r *http.Request) {
 	allowed := false
 	isImage := false
 	
-	if strings.HasPrefix(slashPath, "templates/static/") {
+	if strings.HasPrefix(slashPath, "static/") {
 		ext := strings.ToLower(filepath.Ext(slashPath))
 		switch ext {
 		case ".css", ".js":
@@ -75,8 +75,8 @@ func GetAdminFileView(w http.ResponseWriter, r *http.Request) {
 
 	if isImage {
         data["IsImage"] = true
-        // Map templates/static/foo.png -> /static/foo.png
-        data["Src"] = "/static/" + strings.TrimPrefix(slashPath, "templates/static/")
+        // Map static/foo.png -> /static/foo.png
+        data["Src"] = "/" + slashPath
 	} else {
         // Read the file content
         content, err := os.ReadFile(absPath)
@@ -92,7 +92,7 @@ func GetAdminFileView(w http.ResponseWriter, r *http.Request) {
         data["IsEditable"] = true
 
         // Calculate LiveURL for templates
-        if strings.HasPrefix(slashPath, "templates/") && !strings.HasPrefix(slashPath, "templates/static/") && strings.HasSuffix(slashPath, ".html") {
+        if strings.HasPrefix(slashPath, "templates/") && strings.HasSuffix(slashPath, ".html") {
             // templates/index.html -> /index.html
             // templates/posts/view.html -> /posts/view.html
             subPath := strings.TrimPrefix(slashPath, "templates/")

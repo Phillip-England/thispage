@@ -33,7 +33,7 @@ func GetAdminFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Only allow specific top-level directories
-	allowedDirs := []string{"partials", "templates"}
+	allowedDirs := []string{"partials", "templates", "static"}
     
     var directories []string
 
@@ -131,8 +131,8 @@ func isAllowedFile(relPath string) bool {
 	// Normalize separators
 	relPath = filepath.ToSlash(relPath)
 
-	// Check for static directory (inside templates)
-	if strings.HasPrefix(relPath, "templates/static/") {
+	// Check for static directory (top level)
+	if strings.HasPrefix(relPath, "static/") {
 		ext := strings.ToLower(filepath.Ext(relPath))
 		switch ext {
 		case ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp":
@@ -141,7 +141,7 @@ func isAllowedFile(relPath string) bool {
 		return false
 	}
 
-	// Check for templates directory (excluding static which is handled above)
+	// Check for templates directory
 	if strings.HasPrefix(relPath, "templates/") {
 		return strings.HasSuffix(relPath, ".html")
 	}

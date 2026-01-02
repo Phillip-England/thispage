@@ -30,7 +30,7 @@ func PostAdminFileUpload(w http.ResponseWriter, r *http.Request) {
 
 	destDir := r.FormValue("directory")
 	if destDir == "" {
-		destDir = "templates/static" // Default to static
+		destDir = "static" // Default to static
 	}
 
 	// Clean and Validate Path
@@ -43,7 +43,7 @@ func PostAdminFileUpload(w http.ResponseWriter, r *http.Request) {
     // Security: Validate file type based on directory
     allowed := false
     
-    if strings.HasPrefix(slashPath, "templates/static/") {
+    if strings.HasPrefix(slashPath, "static/") {
 		ext := strings.ToLower(filepath.Ext(slashPath))
 		switch ext {
 		case ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp":

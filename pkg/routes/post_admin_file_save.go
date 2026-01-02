@@ -37,7 +37,7 @@ func PostAdminFileSave(w http.ResponseWriter, r *http.Request) {
     // Security: Validate file type based on directory
     allowed := false
     
-    if strings.HasPrefix(slashPath, "templates/static/") {
+    if strings.HasPrefix(slashPath, "static/") {
 		ext := strings.ToLower(filepath.Ext(slashPath))
 		switch ext {
 		case ".css", ".js":

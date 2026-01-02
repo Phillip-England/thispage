@@ -34,7 +34,7 @@ func PostAdminFileRename(w http.ResponseWriter, r *http.Request) {
     slashOldPath := filepath.ToSlash(oldRelPath)
     
     // Prevent renaming root dirs
-    if slashOldPath == "templates" || slashOldPath == "partials" || slashOldPath == "templates/static" {
+    if slashOldPath == "templates" || slashOldPath == "partials" || slashOldPath == "static" {
          vii.WriteError(w, http.StatusForbidden, "Access denied: Cannot rename root directories.")
 		 return
     }
@@ -102,14 +102,14 @@ func isPathAllowed(relPath string, isDir bool) bool {
 
     // If it's a directory, we mainly check if it's within permitted roots
     if isDir {
-        if strings.HasPrefix(slashPath, "templates/") || strings.HasPrefix(slashPath, "partials/") || slashPath == "templates" || slashPath == "partials" {
+        if strings.HasPrefix(slashPath, "templates/") || strings.HasPrefix(slashPath, "partials/") || strings.HasPrefix(slashPath, "static/") || slashPath == "templates" || slashPath == "partials" || slashPath == "static" {
             return true
         }
         return false
     }
 
     // File rules
-    if strings.HasPrefix(slashPath, "templates/static/") {
+    if strings.HasPrefix(slashPath, "static/") {
 		ext := strings.ToLower(filepath.Ext(slashPath))
 		switch ext {
 		case ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp":

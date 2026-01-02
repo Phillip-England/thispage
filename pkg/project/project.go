@@ -28,7 +28,7 @@ func New(name string, force bool) error {
 	}
 
 	// Define subdirectory paths
-	dirs := []string{"live", "partials", "templates", "templates/posts", "templates/static"}
+	dirs := []string{"live", "partials", "templates", "templates/posts", "static"}
 
 	for _, dir := range dirs {
 		dirPath := filepath.Join(name, dir)
@@ -103,7 +103,7 @@ func New(name string, force bool) error {
 		filepath.Join(partialsDirPath, "hero.html"):           defaultHeroHTML,
 		filepath.Join(partialsDirPath, "content.html"):        defaultContentHTML,
 		filepath.Join(partialsDirPath, "footer.html"):          defaultFooterHTML,
-		filepath.Join(name, "templates/static/input.css"): "@import \"tailwindcss\";\n",
+		filepath.Join(name, "static/input.css"): "@import \"tailwindcss\";\n",
 	}
 
 	for path, content := range filesToCreate {

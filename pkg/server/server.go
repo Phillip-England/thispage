@@ -29,7 +29,7 @@ func Serve(projectPath string) error {
 	app.Use(vii.Logger)
 	
 	// Serve User Project Static Files
-	app.ServeDir("/static", filepath.Join(absProjectPath, "templates", "static"))
+	app.ServeDir("/static", filepath.Join(absProjectPath, "static"))
 	
 	// Serve Admin Interface Static Files (from tool root)
 	app.ServeDir("/admin/assets", filepath.Join(cwd, "static"))
