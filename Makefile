@@ -2,10 +2,10 @@ tw:
 	tailwindcss -i "./static/input.css" -o "./static/output.css" --watch
 
 dev:
-	go run main.go serve myapp
+	go run main.go serve ./tmp/myapp
 
 init:
-	go run main.go init myapp --force
+	go run main.go init ./tmp/myapp --force
 
 kill:
 	sudo lsof -t -i:8080 | xargs kill -9

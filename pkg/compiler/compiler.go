@@ -50,11 +50,24 @@ func Build(projectPath string) error {
 			return err
 		}
 		if info.IsDir() {
-			if info.Name() == "admin" && path == filepath.Join(templatesPath, "admin") {
-				return fmt.Errorf("the 'admin' directory is reserved and cannot be created in 'templates'")
-			}
+            // Prevent reserved directory names in templates root
+            if path == filepath.Join(templatesPath, "admin") {
+                return fmt.Errorf("the 'admin' directory is reserved")
+            }
+            if path == filepath.Join(templatesPath, "static") {
+                return fmt.Errorf("the 'static' directory is reserved")
+            }
 			return nil
 		}
+        
+        // Prevent reserved file names in templates root
+        if path == filepath.Join(templatesPath, "login.html") {
+            return fmt.Errorf("the 'login.html' file is reserved")
+        }
+        if path == filepath.Join(templatesPath, "admin.html") {
+            return fmt.Errorf("the 'admin.html' file is reserved")
+        }
+
 		if filepath.Ext(path) == ".html" {
 			relativePath, err := filepath.Rel(templatesPath, path)
 			if err != nil {
@@ -109,16 +122,29 @@ func Build(projectPath string) error {
       document.querySelectorAll('.thispage-add-btn').forEach(el => el.classList.remove('hidden'));
       document.querySelectorAll('.empty-state').forEach(el => el.style.display = 'none');
 
-      // 3. Inject Back to Admin Button
+      // 3. Inject Admin Control Buttons
       const sourcePath = document.body.getAttribute('data-source-path');
       if (sourcePath) {
-          const backBtn = document.createElement('a');
-          backBtn.href = '/admin/files/view?path=' + encodeURIComponent(sourcePath);
-          backBtn.textContent = 'Back to Edit';
-          backBtn.style.cssText = 'position:fixed;bottom:2rem;left:2rem;z-index:9999;background:#171717;color:white;padding:0.5rem 1rem;border-radius:0.375rem;font-family:sans-serif;font-size:0.875rem;text-decoration:none;border:1px solid #404040;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);';
-          backBtn.onmouseover = () => backBtn.style.background = '#262626';
-          backBtn.onmouseout = () => backBtn.style.background = '#171717';
-          document.body.appendChild(backBtn);
+          const container = document.createElement('div');
+          container.style.cssText = 'position:fixed;bottom:2rem;left:2rem;z-index:9999;display:flex;gap:0.75rem;';
+
+          const editBtn = document.createElement('a');
+          editBtn.href = '/admin/files/view?path=' + encodeURIComponent(sourcePath);
+          editBtn.textContent = 'Edit';
+          editBtn.style.cssText = 'background:#171717;color:white;padding:0.5rem 1rem;border-radius:0.375rem;font-family:sans-serif;font-size:0.875rem;text-decoration:none;border:1px solid #404040;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);';
+          editBtn.onmouseover = () => editBtn.style.background = '#262626';
+          editBtn.onmouseout = () => editBtn.style.background = '#171717';
+          container.appendChild(editBtn);
+
+          const homeBtn = document.createElement('a');
+          homeBtn.href = '/admin/files';
+          homeBtn.textContent = 'Home';
+          homeBtn.style.cssText = 'background:#171717;color:white;padding:0.5rem 1rem;border-radius:0.375rem;font-family:sans-serif;font-size:0.875rem;text-decoration:none;border:1px solid #404040;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);';
+          homeBtn.onmouseover = () => homeBtn.style.background = '#262626';
+          homeBtn.onmouseout = () => homeBtn.style.background = '#171717';
+          container.appendChild(homeBtn);
+
+          document.body.appendChild(container);
       }
 
       // 4. Intercept Links to Persist Admin State

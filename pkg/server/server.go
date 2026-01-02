@@ -7,6 +7,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/joho/godotenv"
+	"github.com/phillip-england/thispage/pkg/auth"
+	"github.com/phillip-england/thispage/pkg/database"
 	"github.com/phillip-england/thispage/pkg/keys"
 	"github.com/phillip-england/thispage/pkg/routes"
 	"github.com/phillip-england/vii/vii"
@@ -20,6 +23,14 @@ func Serve(projectPath string) error {
 
 	absProjectPath := filepath.Join(cwd, projectPath)
 	liveDirPath := filepath.Join(absProjectPath, "live")
+
+    // Load .env
+    _ = godotenv.Load(filepath.Join(absProjectPath, ".env"))
+
+    // Init Database
+    if err := database.Init(absProjectPath); err != nil {
+        return fmt.Errorf("failed to init database: %w", err)
+    }
 
     // Check for Tailwind CSS
     if _, err := exec.LookPath("tailwindcss"); err == nil {
@@ -59,6 +70,18 @@ func Serve(projectPath string) error {
 
     // Custom handler for live directory to support clean URLs (extensionless .html)
     app.Handle("GET /", func(w http.ResponseWriter, r *http.Request) {
+        // Auth Check for Public Pages
+        if auth.IsAuthenticated(r) {
+             if r.URL.Query().Get("is_admin") != "true" {
+                 // Redirect to append query param
+                 q := r.URL.Query()
+                 q.Set("is_admin", "true")
+                 r.URL.RawQuery = q.Encode()
+                 http.Redirect(w, r, r.URL.String(), http.StatusTemporaryRedirect)
+                 return
+             }
+        }
+
         urlPath := r.URL.Path
         // If path is just "/", serve index.html (handled by http.ServeFile usually, but let's be explicit or safe)
         
@@ -94,20 +117,30 @@ func Serve(projectPath string) error {
         http.NotFound(w, r)
     })
 
-	app.Handle("GET /admin", routes.GetAdmin)
-	app.Handle("POST /admin", routes.PostAdmin)
-	app.Handle("GET /admin/files", routes.GetAdminFiles)
-	app.Handle("GET /admin/files/view", routes.GetAdminFileView)
-	app.Handle("POST /admin/files/save", routes.PostAdminFileSave)
-	app.Handle("POST /admin/files/upload", routes.PostAdminFileUpload)
-	app.Handle("POST /admin/files/delete", routes.PostAdminFileDelete)
-	app.Handle("POST /admin/files/rename", routes.PostAdminFileRename)
-	app.Handle("POST /admin/files/create", routes.PostAdminFileCreate)
-	app.Handle("POST /admin/files/create-dir", routes.PostAdminDirCreate)
+    authMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
+        return func(w http.ResponseWriter, r *http.Request) {
+            if !auth.IsAuthenticated(r) {
+                http.Redirect(w, r, "/login", http.StatusSeeOther)
+                return
+            }
+            next(w, r)
+        }
+    }
+
+	app.Handle("GET /login", routes.GetLogin)
+	app.Handle("POST /login", routes.PostLogin)
+	app.Handle("GET /admin", authMiddleware(routes.GetAdminFiles))
+	app.Handle("GET /admin/files/view", authMiddleware(routes.GetAdminFileView))
+	app.Handle("POST /admin/files/save", authMiddleware(routes.PostAdminFileSave))
+	app.Handle("POST /admin/files/upload", authMiddleware(routes.PostAdminFileUpload))
+	app.Handle("POST /admin/files/delete", authMiddleware(routes.PostAdminFileDelete))
+	app.Handle("POST /admin/files/rename", authMiddleware(routes.PostAdminFileRename))
+	app.Handle("POST /admin/files/create", authMiddleware(routes.PostAdminFileCreate))
+	app.Handle("POST /admin/files/create-dir", authMiddleware(routes.PostAdminDirCreate))
     
     // API Routes
-    app.Handle("GET /admin/api/partials", routes.GetAdminPartials)
-    app.Handle("POST /admin/api/insert-partial", routes.PostAdminInsertPartial)
+    app.Handle("GET /admin/api/partials", authMiddleware(routes.GetAdminPartials))
+    app.Handle("POST /admin/api/insert-partial", authMiddleware(routes.PostAdminInsertPartial))
     
 	app.Handle("GET /admin/logout", routes.GetAdminLogout)
 

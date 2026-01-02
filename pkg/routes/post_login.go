@@ -4,11 +4,12 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/phillip-england/thispage/pkg/auth"
 	"github.com/phillip-england/thispage/pkg/forms"
 	"github.com/phillip-england/vii/vii"
 )
 
-func PostAdmin(w http.ResponseWriter, r *http.Request) {
+func PostLogin(w http.ResponseWriter, r *http.Request) {
 	validator := forms.FormAdminLogin{}
 	data, err := validator.Validate(r)
 	if err != nil {
@@ -24,6 +25,12 @@ func PostAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    // Create Session
+    if err := auth.CreateSession(w, r); err != nil {
+        vii.WriteError(w, http.StatusInternalServerError, "Failed to create session: "+err.Error())
+        return
+    }
+
 	// Success
-	vii.Redirect(w, r, "/admin/files", http.StatusSeeOther)
+	vii.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
