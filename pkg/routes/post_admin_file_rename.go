@@ -94,7 +94,7 @@ func PostAdminFileRename(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/admin/files", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
 func isPathAllowed(relPath string, isDir bool) bool {

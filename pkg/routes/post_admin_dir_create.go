@@ -74,5 +74,5 @@ func PostAdminDirCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirect to files list
-	http.Redirect(w, r, "/admin/files", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }

@@ -28,7 +28,7 @@ func New(name string, force bool) error {
 	}
 
 	// Define subdirectory paths
-	dirs := []string{"live", "partials", "templates", "templates/posts", "static"}
+	dirs := []string{"live", "partials", "templates", "templates/posts", "static", "layouts"}
 
 	for _, dir := range dirs {
 		dirPath := filepath.Join(name, dir)
@@ -41,26 +41,22 @@ func New(name string, force bool) error {
 
 	templatesDirPath := filepath.Join(name, "templates")
 	partialsDirPath := filepath.Join(name, "partials")
+    layoutsDirPath := filepath.Join(name, "layouts")
 
-	defaultIndexHTML := `<!DOCTYPE html>
+    guestLayoutHTML := `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
-  <title>Home - This Page</title>
+  <title>{{ slot "title" }}</title>
 </head>
 <body class="bg-neutral-950 text-neutral-300 font-sans antialiased min-h-screen relative">
   <div class="max-w-4xl mx-auto py-20 px-6">
-    {{ include ./partials/navigation.html }}
+    {{ include "./partials/navigation.html" }}
     
     <main class="mt-12 min-h-[50vh] relative">
-        <!-- Empty State Message -->
-        <div class="empty-state absolute inset-0 flex items-center justify-center border-2 border-dashed border-neutral-800 rounded-lg">
-            <a href="/admin" class="text-neutral-700 hover:text-neutral-500 text-sm font-mono transition-colors">
-                Login to start building
-            </a>
-        </div>
+        {{ slot "main" }}
     </main>
   </div>
   
@@ -75,6 +71,18 @@ func New(name string, force bool) error {
   </div>
 </body>
 </html>`
+
+	defaultIndexHTML := `{{ layout "./layouts/guest_layout.html" }}
+
+{{ block "title" }}Home - This Page{{ endblock }}
+
+{{ block "main" }}
+    {{ include "./partials/hero.html" }}
+    {{ include "./partials/content.html" }}
+    {{ include "./partials/footer.html" }}
+{{ endblock }}
+
+{{ endlayout }}`
 
 	defaultNavigationHTML := `<nav class="flex gap-6 border-b border-neutral-800 pb-6 w-full mb-8">
   <a href='/' class="text-xs uppercase tracking-widest hover:text-white transition-colors">Home</a>
@@ -99,6 +107,7 @@ func New(name string, force bool) error {
 
 	filesToCreate := map[string]string{
 		filepath.Join(templatesDirPath, "index.html"):         defaultIndexHTML,
+        filepath.Join(layoutsDirPath, "guest_layout.html"):    guestLayoutHTML,
 		filepath.Join(partialsDirPath, "navigation.html"):     defaultNavigationHTML,
 		filepath.Join(partialsDirPath, "hero.html"):           defaultHeroHTML,
 		filepath.Join(partialsDirPath, "content.html"):        defaultContentHTML,

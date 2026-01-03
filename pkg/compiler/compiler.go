@@ -6,39 +6,154 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
 	"github.com/phillip-england/thispage/pkg/tokenizer"
 )
 
 func Compile(tokens []tokenizer.Token, projectPath string) (string, error) {
+	return compileRecursive(tokens, projectPath, nil)
+}
+
+func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[string]string) (string, error) {
 	var builder strings.Builder
-	for _, token := range tokens {
+	i := 0
+	for i < len(tokens) {
+		token := tokens[i]
 		switch token.Type {
 		case tokenizer.RAWHTML:
 			builder.WriteString(token.Content)
+			i++
 		case tokenizer.INCLUDE:
-			includePath := filepath.Join(projectPath, token.Content)
-
-			cleanPath, err := filepath.Abs(includePath)
+			path := filepath.Join(projectPath, token.Content)
+			// Security check
+			cleanPath, err := filepath.Abs(path)
 			if err != nil {
-				return "", fmt.Errorf("error cleaning path: %w", err)
+				return "", err
 			}
-
-			cleanProjectPath, err := filepath.Abs(projectPath)
+			cleanProject, err := filepath.Abs(projectPath)
 			if err != nil {
-				return "", fmt.Errorf("error cleaning project path: %w", err)
+				return "", err
+			}
+			if !strings.HasPrefix(cleanPath, cleanProject) {
+				return "", fmt.Errorf("include path outside project: %s", token.Content)
 			}
 
-			if !strings.HasPrefix(cleanPath, cleanProjectPath) {
-				return "", fmt.Errorf("include path is outside the project directory: %s", token.Content)
-			}
 			content, err := os.ReadFile(cleanPath)
 			if err != nil {
-				return "", fmt.Errorf("failed to read include file '%s': %w", includePath, err)
+				return "", fmt.Errorf("failed to read include %s: %w", token.Content, err)
 			}
-			builder.Write(content)
+			subTokens := tokenizer.Tokenize(string(content))
+			// Pass blocks down so included files can access slots if needed (advanced usage)
+			subOutput, err := compileRecursive(subTokens, projectPath, blocks)
+			if err != nil {
+				return "", err
+			}
+			builder.WriteString(subOutput)
+			i++
+		case tokenizer.LAYOUT:
+			// Parse layout block
+			layoutPath := filepath.Join(projectPath, token.Content)
+			
+			// Find tokens between LAYOUT and ENDLAYOUT
+			layoutContentTokens, nextIndex := extractTokensUntil(tokens, i+1, tokenizer.LAYOUT, tokenizer.ENDLAYOUT)
+			i = nextIndex // Advance main loop past ENDLAYOUT
+
+			// Parse blocks within the layout content
+			newBlocks := make(map[string]string)
+			// Process layoutContentTokens to find BLOCKs
+			// Note: We don't simply "compile" the content because we need to extract blocks.
+			// Any content *outside* a block in the layout definition is typically ignored or appended?
+			// User example: {{ layout ... }} {{ block "main" }} ... {{ endblock }} {{ endlayout }}
+			// This implies the "page" defines blocks.
+			
+			// We iterate the tokens inside the layout wrapper
+			j := 0
+			for j < len(layoutContentTokens) {
+				t := layoutContentTokens[j]
+				if t.Type == tokenizer.BLOCK {
+					blockName := t.Content
+					blockTokens, nextJ := extractTokensUntil(layoutContentTokens, j+1, tokenizer.BLOCK, tokenizer.ENDBLOCK)
+				j = nextJ
+					// Compile block content
+					compiledBlock, err := compileRecursive(blockTokens, projectPath, nil) // Blocks don't inherit slots usually?
+					if err != nil {
+						return "", err
+					}
+					newBlocks[blockName] = compiledBlock
+				} else {
+					// Ignore other content inside layout wrapper?
+					// Or maybe treat as "default" content? 
+					// For now, ignore non-block content inside layout directive as per standard pattern.
+				j++
+				}
+			}
+
+			// Load Layout File
+			// Security check
+			cleanPath, err := filepath.Abs(layoutPath)
+			if err != nil {
+				return "", err
+			}
+			cleanProject, err := filepath.Abs(projectPath)
+			if err != nil {
+				return "", err
+			}
+			if !strings.HasPrefix(cleanPath, cleanProject) {
+				return "", fmt.Errorf("layout path outside project: %s", token.Content)
+			}
+
+			lContent, err := os.ReadFile(cleanPath)
+			if err != nil {
+				return "", fmt.Errorf("failed to read layout %s: %w", token.Content, err)
+			}
+			layoutTokens := tokenizer.Tokenize(string(lContent))
+			
+			// Compile layout with the captured blocks
+			layoutOutput, err := compileRecursive(layoutTokens, projectPath, newBlocks)
+			if err != nil {
+				return "", err
+			}
+			builder.WriteString(layoutOutput)
+
+		case tokenizer.SLOT:
+			if blocks != nil {
+				if val, ok := blocks[token.Content]; ok {
+					builder.WriteString(val)
+				}
+			}
+			i++
+		case tokenizer.BLOCK, tokenizer.ENDBLOCK, tokenizer.ENDLAYOUT:
+			// Should not be encountered in top-level compile stream if handled correctly,
+			// or treated as raw text / ignored if unmatched.
+			// Treat as ignored/consumed if we are just scanning.
+			// Actually, if we have a BLOCK outside a layout, it might just render?
+			// But for now, let's skip/ignore specific tokens to avoid leaking logic.
+			i++
+		default:
+			i++
 		}
 	}
 	return builder.String(), nil
+}
+
+func extractTokensUntil(tokens []tokenizer.Token, startIndex int, openType, closeType tokenizer.TokenType) ([]tokenizer.Token, int) {
+	depth := 1
+	var captured []tokenizer.Token
+	i := startIndex
+	for i < len(tokens) {
+		t := tokens[i]
+		if t.Type == openType {
+			depth++
+		} else if t.Type == closeType {
+			depth--
+			if depth == 0 {
+				return captured, i + 1
+			}
+		}
+		captured = append(captured, t)
+		i++
+	}
+	return captured, i
 }
 
 func Build(projectPath string) error {
@@ -50,23 +165,20 @@ func Build(projectPath string) error {
 			return err
 		}
 		if info.IsDir() {
-            // Prevent reserved directory names in templates root
-            if path == filepath.Join(templatesPath, "admin") {
-                return fmt.Errorf("the 'admin' directory is reserved")
-            }
-            if path == filepath.Join(templatesPath, "static") {
-                return fmt.Errorf("the 'static' directory is reserved")
-            }
+			if path == filepath.Join(templatesPath, "admin") {
+				return fmt.Errorf("the 'admin' directory is reserved")
+			}
+			if path == filepath.Join(templatesPath, "static") {
+				return fmt.Errorf("the 'static' directory is reserved")
+			}
 			return nil
 		}
-        
-        // Prevent reserved file names in templates root
-        if path == filepath.Join(templatesPath, "login.html") {
-            return fmt.Errorf("the 'login.html' file is reserved")
-        }
-        if path == filepath.Join(templatesPath, "admin.html") {
-            return fmt.Errorf("the 'admin.html' file is reserved")
-        }
+		if path == filepath.Join(templatesPath, "login.html") {
+			return fmt.Errorf("the 'login.html' file is reserved")
+		}
+		if path == filepath.Join(templatesPath, "admin.html") {
+			return fmt.Errorf("the 'admin.html' file is reserved")
+		}
 
 		if filepath.Ext(path) == ".html" {
 			relativePath, err := filepath.Rel(templatesPath, path)
@@ -137,7 +249,7 @@ func Build(projectPath string) error {
           container.appendChild(editBtn);
 
           const homeBtn = document.createElement('a');
-          homeBtn.href = '/admin/files';
+          homeBtn.href = '/admin';
           homeBtn.textContent = 'Home';
           homeBtn.style.cssText = 'background:#171717;color:white;padding:0.5rem 1rem;border-radius:0.375rem;font-family:sans-serif;font-size:0.875rem;text-decoration:none;border:1px solid #404040;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);';
           homeBtn.onmouseover = () => homeBtn.style.background = '#262626';
