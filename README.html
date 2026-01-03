@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThisPage - Project Documentation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #09090b;
+            --bg-sidebar: #121215;
+            --bg-card: #18181b;
+            --bg-code: #27272a;
+            --border: #3f3f46;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.2);
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent-green: #10b981;
+            --accent-purple: #8b5cf6;
+            --sidebar-width: 280px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        aside {
+            width: var(--sidebar-width);
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        aside h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, #fff, #a1a1aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-group { margin-bottom: 2rem; }
+        .nav-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        aside a {
+            display: block;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.5rem 0;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        aside a:hover, aside a.active {
+            color: var(--primary);
+            padding-left: 0.5rem;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 4rem 10%;
+            max-width: 1400px;
+        }
+
+        section { margin-bottom: 5rem; scroll-margin-top: 4rem; }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            margin: 2rem 0 1rem 0;
+            color: #fff;
+        }
+
+        p { margin-bottom: 1rem; color: var(--text-muted); }
+
+        ul { margin-bottom: 1rem; padding-left: 1.5rem; color: var(--text-muted); }
+        li { margin-bottom: 0.5rem; }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--primary);
+        }
+
+        pre code { color: var(--text-main); }
+        
+        .token-keyword { color: var(--accent-purple); }
+        .token-string { color: var(--accent-green); }
+        .token-comment { color: #52525b; font-style: italic; }
+        .token-tag { color: var(--primary); }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            background: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th { background: var(--bg-code); color: #fff; font-weight: 600; }
+        td { color: var(--text-muted); font-size: 0.95rem; }
+        tr:last-child td { border-bottom: none; }
+
+        /* Feature Cards */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .card h4 { margin-bottom: 0.5rem; color: #fff; }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--primary-glow);
+            color: var(--primary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            aside { display: none; }
+            main { margin-left: 0; padding: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<aside>
+    <h1>ThisPage</h1>
+    <div class="nav-group">
+        <div class="nav-header">Getting Started</div>
+        <a href="#introduction">Introduction</a>
+        <a href="#installation">Installation</a>
+        <a href="#project-structure">Project Structure</a>
+    </div>
+    <div class="nav-group">
+        <div class="nav-header">CLI Reference</div>
+        <a href="#cli-init">Init</a>
+        <a href="#cli-serve">Serve & Build</a>
+        <a href="#cli-admin">Admin & Credentials</a>
+    </div>
+    <div class="nav-group">
+        <div class="nav-header">Templating</div>
+        <a href="#layouts">Layouts & Blocks</a>
+        <a href="#components">Includes & Slots</a>
+        <a href="#tailwind">Tailwind CSS</a>
+    </div>
+    <div class="nav-group">
+        <div class="nav-header">Admin Panel</div>
+        <a href="#admin-features">Features</a>
+        <a href="#security">Security</a>
+    </div>
+</aside>
+
+<main>
+    <section id="introduction">
+        <h2>Introduction</h2>
+        <p><strong>ThisPage</strong> is a robust static site generator designed for speed and simplicity. It combines a custom HTML-first templating engine with automatic Tailwind CSS integration and a built-in administrative interface for content management.</p>
+        
+        <div class="grid">
+            <div class="card">
+                <h4>⚡ Live Reloading</h4>
+                <p>Changes to templates, components, or static files trigger an immediate rebuild.</p>
+            </div>
+            <div class="card">
+                <h4>🎨 Tailwind Native</h4>
+                <p>Automatically downloads and configures the Tailwind v4 binary for your architecture.</p>
+            </div>
+            <div class="card">
+                <h4>🛡️ Admin Interface</h4>
+                <p>Built-in file editor, uploader, and zip deployment system secured by session tokens.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="installation">
+        <h2>Installation & Setup</h2>
+        <p>Install the <code>thispage</code> CLI tool to get started.</p>
+        <pre><code><span class="token-comment"># Initialize a new project</span>
+<span class="token-tag">thispage</span> init my-website admin securepassword123
+
+<span class="token-comment"># Enter the directory</span>
+<span class="token-tag">cd</span> my-website
+
+<span class="token-comment"># Start the development server</span>
+<span class="token-tag">thispage</span> serve</code></pre>
+        <p>The server will start on port <strong>8080</strong> by default. Tailwind CSS will automatically download and start watching your <code>static/input.css</code> file.</p>
+    </section>
+
+    <section id="project-structure">
+        <h2>Project Structure</h2>
+        <p>When you initialize a project, the following directory structure is created:</p>
+        <pre><code>my-website/
+├── .thispage/         <span class="token-comment"># Credentials and seeds (gitignored)</span>
+├── components/        <span class="token-comment"># Reusable HTML snippets (nav, footer)</span>
+├── layouts/           <span class="token-comment"># Master page wrappers</span>
+├── live/              <span class="token-comment"># The compiled static site (do not edit directly)</span>
+├── static/            <span class="token-comment"># CSS, JS, Images</span>
+│   └── input.css      <span class="token-comment"># Tailwind entry point</span>
+├── templates/         <span class="token-comment"># Your actual pages</span>
+├── data.db            <span class="token-comment"># SQLite database for sessions/rate limiting</span>
+└── .env               <span class="token-comment"># Environment variables</span></code></pre>
+    </section>
+
+    <section id="cli-init">
+        <h2>CLI Commands</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Command</th>
+                    <th>Arguments</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>init</code></td>
+                    <td><code>&lt;name&gt; &lt;user&gt; &lt;pass&gt;</code></td>
+                    <td>Creates a new project with admin credentials. Use <code>--force</code> to overwrite.</td>
+                </tr>
+                <tr>
+                    <td><code>serve</code></td>
+                    <td><code>[path] [port]</code></td>
+                    <td>Builds the site, starts the file watcher, and runs the HTTP server.</td>
+                </tr>
+                <tr>
+                    <td><code>build</code></td>
+                    <td><code>&lt;path&gt;</code></td>
+                    <td>Compiles the site once without starting a server.</td>
+                </tr>
+                <tr>
+                    <td><code>watch</code></td>
+                    <td><code>&lt;path&gt;</code></td>
+                    <td>Watches for file changes and rebuilds, but does not serve HTTP.</td>
+                </tr>
+                <tr>
+                    <td><code>mount</code></td>
+                    <td><code>&lt;path&gt; &lt;user&gt; &lt;pass&gt;</code></td>
+                    <td>Generates new credentials/seed for an existing project (useful after git clone).</td>
+                </tr>
+                <tr>
+                    <td><code>credentials</code></td>
+                    <td><code>&lt;path&gt;</code></td>
+                    <td>Displays the current encrypted admin credentials and session key.</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="layouts">
+        <h2>Templating Engine</h2>
+        <p>ThisPage uses a custom tokenizer and compiler. It does not use standard Go templates, but rather a custom syntax focused on composition.</p>
+
+        <h3>Layouts & Blocks</h3>
+        <p>Define a master layout using slots or blocks, then inherit it in your templates.</p>
+        
+        <p><strong>layouts/guest_layout.html</strong></p>
+        <pre><code><span class="token-tag">&lt;!DOCTYPE html&gt;</span>
+&lt;html&gt;
+&lt;body&gt;
+    <span class="token-keyword">{{</span> slot "main" <span class="token-keyword">}}</span>
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+        <p><strong>templates/index.html</strong></p>
+        <pre><code><span class="token-keyword">{{</span> layout "./layouts/guest_layout.html" <span class="token-keyword">}}</span>
+
+    <span class="token-keyword">{{</span> block "main" <span class="token-keyword">}}</span>
+        &lt;h1&gt;Welcome to my site&lt;/h1&gt;
+        &lt;p&gt;This content is injected into the slot.&lt;/p&gt;
+    <span class="token-keyword">{{</span> endblock <span class="token-keyword">}}</span>
+
+<span class="token-keyword">{{</span> endlayout <span class="token-keyword">}}</span></code></pre>
+    </section>
+
+    <section id="components">
+        <h3>Components & Includes</h3>
+        <p>You can reuse HTML snippets using the include directive. You can also pass properties to components.</p>
+
+        <p><strong>templates/index.html</strong></p>
+        <pre><code><span class="token-keyword">{{</span> include "./components/navbar.html" title="Home Page" <span class="token-keyword">}}</span></code></pre>
+
+        <p><strong>components/navbar.html</strong></p>
+        <pre><code>&lt;nav&gt;
+    &lt;div&gt;<span class="token-keyword">{{</span> prop "title" <span class="token-keyword">}}</span>&lt;/div&gt;
+&lt;/nav&gt;</code></pre>
+    </section>
+
+    <section id="tailwind">
+        <h2>Tailwind CSS Integration</h2>
+        <p>ThisPage has native support for Tailwind CSS. You do not need Node.js installed.</p>
+        <p>When you run <code>thispage serve</code>, the system:</p>
+        <ol>
+            <li>Checks for a valid Tailwind binary in <code>~/.thispage/bin</code>.</li>
+            <li>Downloads the correct binary for your OS/Arch (v4.1.18) if missing.</li>
+            <li>Runs the binary in watch mode, compiling <code>static/input.css</code> to <code>static/output.css</code>.</li>
+        </ol>
+        <p>Simply use Tailwind utility classes in your HTML files, and they will work immediately.</p>
+    </section>
+
+    <section id="admin-features">
+        <h2>Admin Interface</h2>
+        <p>Access the admin panel by navigating to <code>/login</code> or <code>/admin</code>. The admin system allows you to manage the site directly from the browser.</p>
+
+        <div class="grid">
+            <div class="card">
+                <h4>📝 Live Editing</h4>
+                <p>When logged in as admin, an "Edit" button appears on live pages, linking directly to the source file in the admin editor.</p>
+            </div>
+            <div class="card">
+                <h4>📁 File Manager</h4>
+                <p>Create, rename, delete, and upload files. Navigate through templates, components, and static assets.</p>
+            </div>
+            <div class="card">
+                <h4>🚀 Zip Deployment</h4>
+                <p>Upload a .zip file containing your project structure to instantly deploy updates. Includes logic to prevent "Zip Slip" attacks.</p>
+            </div>
+             <div class="card">
+                <h4>📦 Export</h4>
+                <p>Download a full backup of your project (templates, components, static files) as a .zip file.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="security">
+        <h2>Security & Auth</h2>
+        <p>Security is built into the core:</p>
+        <ul>
+            <li><strong>Encryption:</strong> Credentials are stored using AES-GCM encryption with a project-specific seed.</li>
+            <li><strong>Rate Limiting:</strong> Login attempts are tracked by IP. 5 failed attempts trigger a temporary block. Excessive failures trigger a permanent blacklist.</li>
+            <li><strong>Session Management:</strong> Secure, HTTP-only cookies are used for session management.</li>
+            <li><strong>Path Traversal Protection:</strong> The file system router and admin endpoints strictly validate paths to ensure they stay within the project root.</li>
+        </ul>
+    </section>
+
+</main>
+
+<script>
+    // Simple script to handle active state in sidebar
+    const sections = document.querySelectorAll('section');
+    const navLinks = document.querySelectorAll('aside a');
+
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (scrollY >= sectionTop - 100) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href').includes(current)) {
+                link.classList.add('active');
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
