@@ -20,6 +20,8 @@ const (
 type Token struct {
 	Type    TokenType
 	Content string // For directives, this is the argument string
+    Start   int
+    End     int
 }
 
 // Matches {{ directive args... }}
@@ -36,7 +38,12 @@ func Tokenize(content string) []Token {
 	for _, match := range matches {
 		// Append RAWHTML before the tag
 		if match[0] > lastIndex {
-			tokens = append(tokens, Token{Type: RAWHTML, Content: content[lastIndex:match[0]]})
+			tokens = append(tokens, Token{
+                Type: RAWHTML, 
+                Content: content[lastIndex:match[0]],
+                Start: lastIndex,
+                End: match[0],
+            })
 		}
 
 		// Extract directive and arguments
@@ -46,31 +53,40 @@ func Tokenize(content string) []Token {
 			args = content[match[4]:match[5]]
 		}
 
+        token := Token{Content: args, Start: match[0], End: match[1]}
+
 		switch directive {
 		case "include":
-			tokens = append(tokens, Token{Type: INCLUDE, Content: args})
+            token.Type = INCLUDE
 		case "layout":
-			tokens = append(tokens, Token{Type: LAYOUT, Content: args})
+            token.Type = LAYOUT
 		case "endlayout":
-			tokens = append(tokens, Token{Type: ENDLAYOUT})
+            token.Type = ENDLAYOUT
 		case "block":
-			tokens = append(tokens, Token{Type: BLOCK, Content: args})
+            token.Type = BLOCK
 		case "endblock":
-			tokens = append(tokens, Token{Type: ENDBLOCK})
+            token.Type = ENDBLOCK
 		case "slot":
-			tokens = append(tokens, Token{Type: SLOT, Content: args})
+            token.Type = SLOT
 		case "prop":
-			tokens = append(tokens, Token{Type: PROP, Content: args})
+            token.Type = PROP
 		default:
 			// Treat unknown directives as RAWHTML
-			tokens = append(tokens, Token{Type: RAWHTML, Content: content[match[0]:match[1]]})
+            token.Type = RAWHTML
+            token.Content = content[match[0]:match[1]]
 		}
+        tokens = append(tokens, token)
 
 		lastIndex = match[1]
 	}
 
 	if lastIndex < len(content) {
-		tokens = append(tokens, Token{Type: RAWHTML, Content: content[lastIndex:]})
+		tokens = append(tokens, Token{
+            Type: RAWHTML, 
+            Content: content[lastIndex:],
+            Start: lastIndex,
+            End: len(content),
+        })
 	}
 
 	return tokens

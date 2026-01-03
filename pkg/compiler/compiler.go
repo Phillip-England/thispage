@@ -11,7 +11,7 @@ import (
 	"github.com/phillip-england/thispage/pkg/tokenizer"
 )
 
-var argsRegex = regexp.MustCompile(`(?:(\w+)=["'](.*?)["'])|(?:"(.*?)"|'(.*?)'|(\S+))`)
+var argsRegex = regexp.MustCompile(`(?:(\w+)=["'](.*?)["'])|(?:\"(.*?)\"|'(.*?)'|(\S+))`)
 
 func parseArgs(raw string) (string, map[string]string) {
 	mainArg := ""
@@ -38,11 +38,11 @@ func parseArgs(raw string) (string, map[string]string) {
 	return mainArg, props
 }
 
-func Compile(tokens []tokenizer.Token, projectPath string) (string, error) {
-	return compileRecursive(tokens, projectPath, nil, nil)
+func Compile(tokens []tokenizer.Token, projectPath string, currentFile string) (string, error) {
+	return compileRecursive(tokens, projectPath, nil, nil, currentFile)
 }
 
-func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[string]string, props map[string]string) (string, error) {
+func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[string]string, props map[string]string, currentFile string) (string, error) {
 	var builder strings.Builder
 	i := 0
 	for i < len(tokens) {
@@ -54,7 +54,7 @@ func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[s
 		case tokenizer.INCLUDE:
 			pathStr, newProps := parseArgs(token.Content)
 			
-			// Merge props: existing props + new props (new props override)
+			// Merge props
 			mergedProps := make(map[string]string)
 			for k, v := range props {
 				mergedProps[k] = v
@@ -81,11 +81,19 @@ func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[s
 				return "", fmt.Errorf("failed to read include %s: %w", pathStr, err)
 			}
 			subTokens := tokenizer.Tokenize(string(content))
-			subOutput, err := compileRecursive(subTokens, projectPath, blocks, mergedProps)
+            
+            // Output Start Marker
+            builder.WriteString(fmt.Sprintf("<!-- __TP_INC__ file=\"%s\" token_index=\"%d\" -->", currentFile, i))
+            
+			subOutput, err := compileRecursive(subTokens, projectPath, blocks, mergedProps, pathStr)
 			if err != nil {
 				return "", err
 			}
 			builder.WriteString(subOutput)
+            
+            // Output End Marker
+            builder.WriteString("<!-- __TP_END_INC__ -->")
+            
 			i++
 		case tokenizer.LAYOUT:
 			pathStr, newProps := parseArgs(token.Content)
@@ -111,7 +119,7 @@ func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[s
 					blockName, _ := parseArgs(t.Content)
 					blockTokens, nextJ := extractTokensUntil(layoutContentTokens, j+1, tokenizer.BLOCK, tokenizer.ENDBLOCK)
 					j = nextJ
-					compiledBlock, err := compileRecursive(blockTokens, projectPath, nil, mergedProps) // Pass props to blocks?
+					compiledBlock, err := compileRecursive(blockTokens, projectPath, nil, mergedProps, currentFile) 
 					if err != nil {
 						return "", err
 					}
@@ -139,7 +147,7 @@ func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[s
 			}
 			layoutTokens := tokenizer.Tokenize(string(lContent))
 			
-			layoutOutput, err := compileRecursive(layoutTokens, projectPath, newBlocks, mergedProps)
+			layoutOutput, err := compileRecursive(layoutTokens, projectPath, newBlocks, mergedProps, pathStr)
 			if err != nil {
 				return "", err
 			}
@@ -223,7 +231,8 @@ func Build(projectPath string) error {
 				return err
 			}
 			tokens := tokenizer.Tokenize(string(content))
-			compiledContent, err := Compile(tokens, projectPath)
+			
+			compiledContent, err := Compile(tokens, projectPath, filepath.Join("templates", relativePath))
 			if err != nil {
 				return fmt.Errorf("error compiling %s: %w", path, err)
 			}
@@ -249,7 +258,7 @@ func Build(projectPath string) error {
             "position: relative;" +
         "}" +
         ".thispage-block:hover::after {" +
-            "content: 'Edit';" +
+            "content: 'Edit / Delete';" +
             "position: absolute;" +
             "top: -20px;" +
             "right: 0;" +
@@ -368,8 +377,58 @@ func Build(projectPath string) error {
         if (e.target.classList.contains('thispage-block')) {
             e.preventDefault();
             e.stopPropagation();
-            console.log("Block clicked:", e.target);
-            alert("Edit block functionality coming soon!");
+            
+            let el = e.target;
+            
+            // Helper to find previous comment sibling
+            function findMarker(element) {
+                let ptr = element;
+                while (ptr && ptr !== document.body) {
+                    let balance = 0;
+                    let sibling = ptr.previousSibling;
+                    while (sibling) {
+                        if (sibling.nodeType === 8) { // Comment
+                            const text = sibling.nodeValue.trim();
+                            if (text === '__TP_END_INC__') {
+                                balance++;
+                            } else if (text.startsWith('__TP_INC__')) {
+                                if (balance === 0) {
+                                    const fileMatch = text.match(/file=\"([^\"]+)\"/);
+                                    const indexMatch = text.match(/token_index=\"([^\"]+)\"/);
+                                    if (fileMatch && indexMatch) {
+                                        return { file: fileMatch[1], index: indexMatch[1] };
+                                    }
+                                } else {
+                                    balance--;
+                                }
+                            }
+                        }
+                        sibling = sibling.previousSibling;
+                    }
+                    ptr = ptr.parentNode;
+                }
+                return null;
+            }
+            
+            const info = findMarker(el);
+            
+            if (info) {
+                if (confirm('Delete this block included from ' + info.file + '?')) {
+                    fetch('/admin/api/delete-block', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'file=' + encodeURIComponent(info.file) + '&token_index=' + encodeURIComponent(info.index)
+                    }).then(res => {
+                        if (res.ok) {
+                            window.location.reload();
+                        } else {
+                            alert('Error deleting block');
+                        }
+                    });
+                }
+            } else {
+                alert("Could not identify the source of this block. It might be hardcoded in the layout.");
+            }
             return;
         }
 

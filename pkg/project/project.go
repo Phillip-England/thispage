@@ -78,14 +78,85 @@ func New(name string, force bool) error {
 
 {{ block "main" }}
     {{ include "./partials/hero.html" }}
+    
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-8 py-12">
+        {{ include "./partials/feature_item.html" icon="⚡" title="Fast" description="Built for speed and performance from the ground up." }}
+        {{ include "./partials/feature_item.html" icon="🎨" title="Beautiful" description="Stunning default styles using Tailwind CSS." }}
+        {{ include "./partials/feature_item.html" icon="🛠" title="Flexible" description="Easy to customize and extend for your needs." }}
+    </section>
+
     {{ include "./partials/content.html" }}
+    {{ include "./partials/cta.html" title="Ready to start?" text="Get your project up and running in seconds." button_text="Get Started" button_link="/pricing" }}
     {{ include "./partials/footer.html" }}
 {{ endblock }}
 
 {{ endlayout }}`
 
-	defaultNavigationHTML := `<nav class="flex gap-6 border-b border-neutral-800 pb-6 w-full mb-8">
-  <a href='/' class="text-xs uppercase tracking-widest hover:text-white transition-colors">Home</a>
+    aboutPageHTML := `{{ layout "./layouts/guest_layout.html" }}
+{{ block "title" }}About Us - This Page{{ endblock }}
+{{ block "main" }}
+    {{ include "./partials/page_header.html" title="About Our Team" subtitle="We are building the future of content management." }}
+    
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-12 py-12">
+        {{ include "./partials/team_member.html" name="Sarah Connor" role="Founder & CEO" image="https://i.pravatar.cc/300?img=1" }}
+        {{ include "./partials/team_member.html" name="John Smith" role="CTO" image="https://i.pravatar.cc/300?img=3" }}
+        {{ include "./partials/team_member.html" name="Emily Blunt" role="Head of Design" image="https://i.pravatar.cc/300?img=5" }}
+    </section>
+    
+    {{ include "./partials/content.html" }}
+    {{ include "./partials/footer.html" }}
+{{ endblock }}
+{{ endlayout }}`
+
+    pricingPageHTML := `{{ layout "./layouts/guest_layout.html" }}
+{{ block "title" }}Pricing - This Page{{ endblock }}
+{{ block "main" }}
+    {{ include "./partials/page_header.html" title="Simple Pricing" subtitle="Choose the plan that fits your needs." }}
+    
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-8 py-12">
+        {{ include "./partials/pricing_card.html" plan="Starter" price="0" description="Perfect for personal projects." }}
+        {{ include "./partials/pricing_card.html" plan="Pro" price="29" description="For growing teams and businesses." }}
+        {{ include "./partials/pricing_card.html" plan="Enterprise" price="99" description="Advanced features for large scale." }}
+    </section>
+    
+    {{ include "./partials/cta.html" title="Not sure?" text="Contact our sales team for a custom quote." button_text="Contact Sales" button_link="/contact" }}
+    {{ include "./partials/footer.html" }}
+{{ endblock }}
+{{ endlayout }}`
+
+    contactPageHTML := `{{ layout "./layouts/guest_layout.html" }}
+{{ block "title" }}Contact - This Page{{ endblock }}
+{{ block "main" }}
+    {{ include "./partials/page_header.html" title="Get in Touch" subtitle="We'd love to hear from you." }}
+    
+    <div class="max-w-2xl mx-auto py-12">
+        <form class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-neutral-400 mb-2">Name</label>
+                <input type="text" class="w-full bg-neutral-900 border border-neutral-800 rounded p-3 text-white focus:border-blue-500 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-neutral-400 mb-2">Email</label>
+                <input type="email" class="w-full bg-neutral-900 border border-neutral-800 rounded p-3 text-white focus:border-blue-500 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-neutral-400 mb-2">Message</label>
+                <textarea rows="4" class="w-full bg-neutral-900 border border-neutral-800 rounded p-3 text-white focus:border-blue-500 focus:outline-none"></textarea>
+            </div>
+            <button type="submit" class="bg-white text-black font-bold py-3 px-8 rounded hover:bg-neutral-200 transition-colors">Send Message</button>
+        </form>
+    </div>
+
+    {{ include "./partials/footer.html" }}
+{{ endblock }}
+{{ endlayout }}`
+
+	defaultNavigationHTML := `<nav class="flex gap-6 border-b border-neutral-800 pb-6 w-full mb-8 items-center">
+  <a href='/' class="font-bold text-white text-lg mr-auto">ThisPage</a>
+  <a href='/' class="text-xs uppercase tracking-widest hover:text-white transition-colors text-neutral-400">Home</a>
+  <a href='/about' class="text-xs uppercase tracking-widest hover:text-white transition-colors text-neutral-400">About</a>
+  <a href='/pricing' class="text-xs uppercase tracking-widest hover:text-white transition-colors text-neutral-400">Pricing</a>
+  <a href='/contact' class="text-xs uppercase tracking-widest hover:text-white transition-colors text-neutral-400">Contact</a>
 </nav>`
 
     defaultHeroHTML := `<header class="py-20 text-center thispage-block">
@@ -154,8 +225,34 @@ func New(name string, force bool) error {
     <p class="text-xl text-neutral-400 max-w-2xl">{{ prop "subtitle" }}</p>
 </div>`
 
+    defaultFeatureItemHTML := `<div class="p-6 border border-neutral-800 rounded-lg thispage-block hover:bg-neutral-900 transition-colors">
+    <div class="w-12 h-12 bg-blue-900/30 text-blue-500 rounded-full flex items-center justify-center mb-4 text-2xl">
+        {{ prop "icon" }}
+    </div>
+    <h3 class="text-lg font-bold text-white mb-2">{{ prop "title" }}</h3>
+    <p class="text-neutral-400 text-sm leading-relaxed">{{ prop "description" }}</p>
+</div>`
+
+    defaultPricingCardHTML := `<div class="border border-neutral-800 p-8 rounded-2xl bg-neutral-900/20 thispage-block hover:border-blue-600 transition-colors relative flex flex-col">
+    <h3 class="text-lg font-medium text-neutral-400 mb-4">{{ prop "plan" }}</h3>
+    <div class="text-4xl font-bold text-white mb-6">${{ prop "price" }}<span class="text-sm text-neutral-500 font-normal">/mo</span></div>
+    <p class="text-sm text-neutral-400 mb-8 border-b border-neutral-800 pb-8 flex-grow">{{ prop "description" }}</p>
+    <a href="#" class="block w-full bg-white text-black font-bold text-center py-3 rounded hover:bg-neutral-200 transition-colors mt-auto">Choose Plan</a>
+</div>`
+
+    defaultTeamMemberHTML := `<div class="text-center thispage-block group">
+    <div class="w-32 h-32 mx-auto rounded-full overflow-hidden mb-4 border-2 border-neutral-800 group-hover:border-blue-500 transition-colors">
+        <img src="{{ prop "image" }}" alt="{{ prop "name" }}" class="w-full h-full object-cover">
+    </div>
+    <h3 class="text-white font-bold text-lg">{{ prop "name" }}</h3>
+    <p class="text-blue-500 text-xs uppercase tracking-widest mt-1">{{ prop "role" }}</p>
+</div>`
+
 	filesToCreate := map[string]string{
 		filepath.Join(templatesDirPath, "index.html"):         defaultIndexHTML,
+		filepath.Join(templatesDirPath, "about.html"):         aboutPageHTML,
+		filepath.Join(templatesDirPath, "pricing.html"):       pricingPageHTML,
+		filepath.Join(templatesDirPath, "contact.html"):       contactPageHTML,
         filepath.Join(layoutsDirPath, "guest_layout.html"):    guestLayoutHTML,
 		filepath.Join(partialsDirPath, "navigation.html"):     defaultNavigationHTML,
 		filepath.Join(partialsDirPath, "hero.html"):           defaultHeroHTML,
@@ -165,6 +262,9 @@ func New(name string, force bool) error {
         filepath.Join(partialsDirPath, "cta.html"):            defaultCtaHTML,
         filepath.Join(partialsDirPath, "testimonial.html"):    defaultTestimonialHTML,
         filepath.Join(partialsDirPath, "page_header.html"):    defaultPageHeaderHTML,
+        filepath.Join(partialsDirPath, "feature_item.html"):   defaultFeatureItemHTML,
+        filepath.Join(partialsDirPath, "pricing_card.html"):   defaultPricingCardHTML,
+        filepath.Join(partialsDirPath, "team_member.html"):    defaultTeamMemberHTML,
 		filepath.Join(name, "static/input.css"): "@import \"tailwindcss\";\n",
 	}
 

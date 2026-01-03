@@ -141,6 +141,7 @@ func Serve(projectPath string) error {
     // API Routes
     app.Handle("GET /admin/api/partials", authMiddleware(routes.GetAdminPartials))
     app.Handle("POST /admin/api/insert-partial", authMiddleware(routes.PostAdminInsertPartial))
+    app.Handle("POST /admin/api/delete-block", authMiddleware(routes.PostAdminDeleteBlock))
     
 	app.Handle("GET /admin/logout", routes.GetAdminLogout)
 
