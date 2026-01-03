@@ -89,12 +89,23 @@ func New(name string, force bool, username, password string) error {
     &copy; 2024 Your Company.
 </footer>`
 
+	gitignoreContent := `# thispage credentials (sensitive - do not commit)
+.thispage/
+
+# SQLite database
+data.db
+
+# Build output
+live/
+`
+
 	filesToCreate := map[string]string{
 		filepath.Join(templatesDirPath, "index.html"):       defaultIndexHTML,
 		filepath.Join(layoutsDirPath, "guest_layout.html"):  guestLayoutHTML,
 		filepath.Join(componentsDirPath, "navigation.html"): defaultNavigationHTML,
 		filepath.Join(componentsDirPath, "footer.html"):     defaultFooterHTML,
 		filepath.Join(name, "static/input.css"):             "@import \"tailwindcss\";\n",
+		filepath.Join(name, ".gitignore"):                   gitignoreContent,
 	}
 
 	for path, content := range filesToCreate {
