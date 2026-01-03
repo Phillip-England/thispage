@@ -146,6 +146,7 @@ func Serve(projectPath string, port string) error {
 	app.Handle("POST /admin/files/create", authMiddleware(routes.PostAdminFileCreate))
 	app.Handle("POST /admin/files/create-dir", authMiddleware(routes.PostAdminDirCreate))
 	app.Handle("POST /admin/files/zip-upload", authMiddleware(routes.PostAdminZipUpload))
+	app.Handle("GET /admin/export", authMiddleware(routes.GetAdminExport))
 
     // API Routes
     app.Handle("GET /admin/api/components", authMiddleware(routes.GetAdminComponents))
