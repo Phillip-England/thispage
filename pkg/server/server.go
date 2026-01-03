@@ -31,8 +31,8 @@ func Serve(projectPath string, port string) error {
 	// Load .env
 	_ = godotenv.Load(filepath.Join(absProjectPath, ".env"))
 
-	if _, err := credentials.EnsureSeed(); err != nil {
-		return fmt.Errorf("failed to initialize seed: %w", err)
+	if _, err := credentials.EnsureProjectSeed(absProjectPath); err != nil {
+		return fmt.Errorf("failed to initialize project seed: %w", err)
 	}
 
     // Init Database

@@ -25,44 +25,31 @@ type plainCredentials struct {
 	SessionToken string `json:"session_token"`
 }
 
-const seedEnvKey = "THISPAGE_SEED"
+func projectSeedPath(projectPath string) string {
+	return filepath.Join(projectPath, ".thispage", "seed")
+}
 
-func Seed() (string, error) {
-	if seed := strings.TrimSpace(os.Getenv(seedEnvKey)); seed != "" {
-		return seed, nil
-	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve home directory: %w", err)
-	}
-
-	seedPath := filepath.Join(homeDir, ".thispage", "seed")
+func ProjectSeed(projectPath string) (string, error) {
+	seedPath := projectSeedPath(projectPath)
 	data, err := os.ReadFile(seedPath)
 	if err != nil {
-		return "", fmt.Errorf("seed is not set and seed file is missing: %w", err)
+		return "", fmt.Errorf("project seed file is missing: %w", err)
 	}
 
 	seed := strings.TrimSpace(string(data))
 	if seed == "" {
-		return "", fmt.Errorf("seed file is empty: %s", seedPath)
+		return "", fmt.Errorf("project seed file is empty: %s", seedPath)
 	}
 
-	_ = os.Setenv(seedEnvKey, seed)
 	return seed, nil
 }
 
-func EnsureSeed() (string, error) {
-	if seed, err := Seed(); err == nil {
+func EnsureProjectSeed(projectPath string) (string, error) {
+	if seed, err := ProjectSeed(projectPath); err == nil {
 		return seed, nil
 	}
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve home directory: %w", err)
-	}
-
-	seedPath := filepath.Join(homeDir, ".thispage", "seed")
+	seedPath := projectSeedPath(projectPath)
 
 	seedBytes := make([]byte, 32)
 	if _, err := rand.Read(seedBytes); err != nil {
@@ -77,7 +64,6 @@ func EnsureSeed() (string, error) {
 		return "", fmt.Errorf("failed to write seed file: %w", err)
 	}
 
-	_ = os.Setenv(seedEnvKey, seed)
 	return seed, nil
 }
 
@@ -86,7 +72,7 @@ func Save(projectPath, username, password string) error {
 		return fmt.Errorf("username and password are required")
 	}
 
-	seed, err := EnsureSeed()
+	seed, err := EnsureProjectSeed(projectPath)
 	if err != nil {
 		return err
 	}
@@ -155,7 +141,7 @@ func Load(projectPath string) (string, string, error) {
 }
 
 func LoadWithToken(projectPath string) (string, string, string, error) {
-	seed, err := Seed()
+	seed, err := ProjectSeed(projectPath)
 	if err != nil {
 		return "", "", "", err
 	}

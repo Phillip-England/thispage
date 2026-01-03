@@ -26,7 +26,13 @@ var credentialsCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Printf("Username: %s\nPassword: %s\n", username, password)
+		sessionKey, err := credentials.ProjectSeed(projectPath)
+		if err != nil {
+			fmt.Printf("Error loading session key: %v\n", err)
+			return
+		}
+
+		fmt.Printf("Username:    %s\nPassword:    %s\nSession Key: %s\n", username, password, sessionKey)
 	},
 }
 
