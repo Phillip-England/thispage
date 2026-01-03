@@ -32,7 +32,7 @@ func PostAdminFileCreate(w http.ResponseWriter, r *http.Request) {
 
     // Auto-append extension logic (Backend fallback/enforcement)
     destDirSlash := filepath.ToSlash(destDir)
-    if strings.HasPrefix(destDirSlash, "templates") || strings.HasPrefix(destDirSlash, "components") {
+    if strings.HasPrefix(destDirSlash, "templates") || strings.HasPrefix(destDirSlash, "components") || strings.HasPrefix(destDirSlash, "layouts") {
         if !strings.HasSuffix(filename, ".html") {
             filename += ".html"
         }
@@ -58,6 +58,10 @@ func PostAdminFileCreate(w http.ResponseWriter, r *http.Request) {
 			allowed = true
 		}
 	} else if strings.HasPrefix(slashPath, "components/") {
+		if strings.HasSuffix(slashPath, ".html") {
+			allowed = true
+		}
+	} else if strings.HasPrefix(slashPath, "layouts/") {
 		if strings.HasSuffix(slashPath, ".html") {
 			allowed = true
 		}

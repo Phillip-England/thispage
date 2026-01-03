@@ -149,10 +149,6 @@ func Serve(projectPath string) error {
     
     // API Routes
     app.Handle("GET /admin/api/components", authMiddleware(routes.GetAdminComponents))
-    app.Handle("GET /admin/api/containers", authMiddleware(routes.GetAdminContainers))
-    app.Handle("POST /admin/api/insert-component", authMiddleware(routes.PostAdminInsertComponent))
-    app.Handle("POST /admin/api/insert-container", authMiddleware(routes.PostAdminInsertContainer))
-    app.Handle("POST /admin/api/delete-block", authMiddleware(routes.PostAdminDeleteBlock))
     
 	app.Handle("GET /admin/logout", routes.GetAdminLogout)
 

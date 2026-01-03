@@ -52,6 +52,10 @@ func PostAdminFileSave(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(slashPath, ".html") {
 			allowed = true
 		}
+	} else if strings.HasPrefix(slashPath, "layouts/") {
+		if strings.HasSuffix(slashPath, ".html") {
+			allowed = true
+		}
 	}
 
     if !allowed {
