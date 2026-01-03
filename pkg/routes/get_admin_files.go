@@ -33,7 +33,7 @@ func GetAdminFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Only allow specific top-level directories
-	allowedDirs := []string{"partials", "templates", "static"}
+	allowedDirs := []string{"components", "templates", "static"}
     
     var directories []string
 
@@ -146,8 +146,8 @@ func isAllowedFile(relPath string) bool {
 		return strings.HasSuffix(relPath, ".html")
 	}
 
-	// Check for partials directory
-	if strings.HasPrefix(relPath, "partials/") {
+	// Check for components directory
+	if strings.HasPrefix(relPath, "components/") {
 		return strings.HasSuffix(relPath, ".html")
 	}
 

@@ -34,7 +34,7 @@ func PostAdminFileRename(w http.ResponseWriter, r *http.Request) {
     slashOldPath := filepath.ToSlash(oldRelPath)
     
     // Prevent renaming root dirs
-    if slashOldPath == "templates" || slashOldPath == "partials" || slashOldPath == "static" {
+    if slashOldPath == "templates" || slashOldPath == "components" || slashOldPath == "static" {
          vii.WriteError(w, http.StatusForbidden, "Access denied: Cannot rename root directories.")
 		 return
     }
@@ -102,7 +102,7 @@ func isPathAllowed(relPath string, isDir bool) bool {
 
     // If it's a directory, we mainly check if it's within permitted roots
     if isDir {
-        if strings.HasPrefix(slashPath, "templates/") || strings.HasPrefix(slashPath, "partials/") || strings.HasPrefix(slashPath, "static/") || slashPath == "templates" || slashPath == "partials" || slashPath == "static" {
+        if strings.HasPrefix(slashPath, "templates/") || strings.HasPrefix(slashPath, "components/") || strings.HasPrefix(slashPath, "static/") || slashPath == "templates" || slashPath == "components" || slashPath == "static" {
             return true
         }
         return false
@@ -119,7 +119,7 @@ func isPathAllowed(relPath string, isDir bool) bool {
 		if strings.HasSuffix(slashPath, ".html") {
 			return true
 		}
-	} else if strings.HasPrefix(slashPath, "partials/") {
+	} else if strings.HasPrefix(slashPath, "components/") {
 		if strings.HasSuffix(slashPath, ".html") {
 			return true
 		}

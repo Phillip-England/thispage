@@ -33,7 +33,7 @@ func PostAdminFileDelete(w http.ResponseWriter, r *http.Request) {
     slashPath := filepath.ToSlash(relPath)
 	
     // Prevent deleting root directories
-    if slashPath == "templates" || slashPath == "partials" || slashPath == "static" {
+    if slashPath == "templates" || slashPath == "components" || slashPath == "static" {
         vii.WriteError(w, http.StatusForbidden, "Access denied: Cannot delete root directories.")
         return
     }
@@ -61,7 +61,7 @@ func PostAdminFileDelete(w http.ResponseWriter, r *http.Request) {
     allowed := false
     
     // Check prefix first
-    if strings.HasPrefix(slashPath, "templates/") || strings.HasPrefix(slashPath, "partials/") || strings.HasPrefix(slashPath, "static/") {
+    if strings.HasPrefix(slashPath, "templates/") || strings.HasPrefix(slashPath, "components/") || strings.HasPrefix(slashPath, "static/") {
         if info.IsDir() {
             // Allow deleting subdirectories
             allowed = true
@@ -77,7 +77,7 @@ func PostAdminFileDelete(w http.ResponseWriter, r *http.Request) {
                 if strings.HasSuffix(slashPath, ".html") {
                     allowed = true
                 }
-            } else if strings.HasPrefix(slashPath, "partials/") {
+            } else if strings.HasPrefix(slashPath, "components/") {
                 if strings.HasSuffix(slashPath, ".html") {
                     allowed = true
                 }

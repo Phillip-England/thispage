@@ -11,7 +11,7 @@ import (
 	"github.com/phillip-england/thispage/pkg/tokenizer"
 )
 
-var argsRegex = regexp.MustCompile(`(?:(\w+)=["'](.*?)["'])|(?:\"(.*?)\"|'(.*?)'|(\S+))`)
+var argsRegex = regexp.MustCompile(`(?:(\w+)=["'](.*?)["'])|(?:"(.*?)"|'(.*?)'|(\S+))`) // Corrected: escaped quotes within the regex string
 
 func parseArgs(raw string) (string, map[string]string) {
 	mainArg := ""
@@ -27,10 +27,10 @@ func parseArgs(raw string) (string, map[string]string) {
 			if val == "" {
 				val = match[4] // single quoted
 			}
-			if val == "" {
+		if val == "" {
 				val = match[5] // unquoted
 			}
-			if mainArg == "" && val != "" {
+		if mainArg == "" && val != "" {
 				mainArg = val
 			}
 		}
@@ -118,7 +118,7 @@ func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[s
 				if t.Type == tokenizer.BLOCK {
 					blockName, _ := parseArgs(t.Content)
 					blockTokens, nextJ := extractTokensUntil(layoutContentTokens, j+1, tokenizer.BLOCK, tokenizer.ENDBLOCK)
-					j = nextJ
+				j = nextJ
 					compiledBlock, err := compileRecursive(blockTokens, projectPath, nil, mergedProps, currentFile) 
 					if err != nil {
 						return "", err
@@ -240,7 +240,7 @@ func Build(projectPath string) error {
             // Inject data-source-path into body
             dataSourcePath := filepath.Join("templates", relativePath)
             if strings.Contains(compiledContent, "<body") {
-                compiledContent = strings.Replace(compiledContent, "<body", fmt.Sprintf("<body data-source-path=\"%s\"", dataSourcePath), 1)
+                compiledContent = strings.Replace(compiledContent, "<body", fmt.Sprintf("<body data-source-path=\"%%s\"", dataSourcePath), 1)
             }
 
             // Inject Admin Mode Script
@@ -252,12 +252,12 @@ func Build(projectPath string) error {
       // 1. Inject Styles for Blocks
       const style = document.createElement('style');
       style.textContent = 
-        ".thispage-block:hover {" +
+        ".thispage-component:hover {" +
             "outline: 2px solid #3b82f6;" +
             "cursor: pointer;" +
             "position: relative;" +
         "}" +
-        ".thispage-block:hover::after {" +
+        ".thispage-component:hover::after {" +
             "content: 'Edit / Delete';" +
             "position: absolute;" +
             "top: -20px;" +
@@ -269,6 +269,26 @@ func Build(projectPath string) error {
             "border-radius: 2px;" +
             "font-family: sans-serif;" +
             "pointer-events: none;" +
+            "z-index: 1000;" +
+        "}" +
+        ".thispage-container:hover {" +
+            "outline: 2px dashed #22c55e;" +
+            "cursor: pointer;" +
+            "position: relative;" +
+        "}" +
+        ".thispage-container:hover::before {" +
+            "content: 'Add Component';" +
+            "position: absolute;" +
+            "top: -20px;" +
+            "left: 0;" +
+            "background: #22c55e;" +
+            "color: white;" +
+            "font-size: 10px;" +
+            "padding: 2px 6px;" +
+            "border-radius: 2px;" +
+            "font-family: sans-serif;" +
+            "pointer-events: none;" +
+            "z-index: 1000;" +
         "}";
       document.head.appendChild(style);
 
@@ -301,48 +321,68 @@ func Build(projectPath string) error {
           document.body.appendChild(container);
       }
 
-      // 4. Intercept Links to Persist Admin State
-      document.addEventListener('click', function(e) {
-        // Add Button Handler
-        if (e.target.closest('.thispage-add-btn')) {
-             e.preventDefault();
-             e.stopPropagation();
-             
-             // Fetch partials
-             fetch('/admin/api/partials')
+      // Helper to find marker
+      function findMarker(element) {
+            let ptr = element;
+            while (ptr && ptr !== document.body) {
+                let balance = 0;
+                let sibling = ptr.previousSibling;
+                while (sibling) {
+                    if (sibling.nodeType === 8) { // Comment
+                        const text = sibling.nodeValue.trim();
+                        if (text === '__TP_END_INC__') {
+                            balance++;
+                        } else if (text.startsWith('__TP_INC__')) {
+                            if (balance === 0) {
+                                const fileMatch = text.match(/file=\"([^\"]+)\"/);
+                                const indexMatch = text.match(/token_index=\"([^\"]+)\"/);
+                                if (fileMatch && indexMatch) {
+                                    return { file: fileMatch[1], index: indexMatch[1] };
+                                }
+                            } else {
+                                balance--;
+                            }
+                        }
+                    }
+                    sibling = sibling.previousSibling;
+                }
+                ptr = ptr.parentNode;
+            }
+            return null;
+      }
+
+      // Helper to show modal
+      function showModal(titleText, apiUrl, sourcePath, extraParams = {}) {
+             fetch(apiUrl)
                 .then(res => res.json())
                 .then(data => {
-                    // Create and show modal
-                    let modal = document.getElementById('partial-modal');
-                    if (!modal) {
-                        modal = document.createElement('div');
-                        modal.id = 'partial-modal';
-                        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
-                        
-                        const content = document.createElement('div');
-                        content.style.cssText = 'background:#171717;border:1px solid #404040;padding:24px;border-radius:8px;width:300px;color:white;';
-                        
-                        const title = document.createElement('h3');
-                        title.textContent = 'Insert Block';
-                        title.style.cssText = 'font-weight:bold;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;font-size:12px;color:#a3a3a3;';
-                        content.appendChild(title);
-                        
-                        const list = document.createElement('ul');
-                        list.id = 'partial-list';
-                        content.appendChild(list);
-
-                        const close = document.createElement('button');
-                        close.textContent = 'Cancel';
-                        close.style.cssText = 'margin-top:16px;width:100%;padding:8px;background:transparent;border:1px solid #404040;color:#a3a3a3;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px;';
-                        close.onclick = () => modal.style.display = 'none';
-                        content.appendChild(close);
-                        
-                        modal.appendChild(content);
-                        document.body.appendChild(modal);
-                    }
+                    let modal = document.getElementById('admin-modal');
+                    if (modal) modal.remove(); // Recreate to clear state
                     
-                    const list = document.getElementById('partial-list');
-                    list.innerHTML = ''; // clear
+                    modal = document.createElement('div');
+                    modal.id = 'admin-modal';
+                    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+                    
+                    const content = document.createElement('div');
+                    content.style.cssText = 'background:#171717;border:1px solid #404040;padding:24px;border-radius:8px;width:300px;color:white;';
+                    
+                    const title = document.createElement('h3');
+                    title.textContent = titleText;
+                    title.style.cssText = 'font-weight:bold;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;font-size:12px;color:#a3a3a3;';
+                    content.appendChild(title);
+                    
+                    const list = document.createElement('ul');
+                    list.style.cssText = 'max-height:300px;overflow-y:auto;';
+                    content.appendChild(list);
+
+                    const close = document.createElement('button');
+                    close.textContent = 'Cancel';
+                    close.style.cssText = 'margin-top:16px;width:100%;padding:8px;background:transparent;border:1px solid #404040;color:#a3a3a3;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px;';
+                    close.onclick = () => modal.remove();
+                    content.appendChild(close);
+                    
+                    modal.appendChild(content);
+                    document.body.appendChild(modal);
                     
                     data.files.forEach(file => {
                         const item = document.createElement('li');
@@ -352,68 +392,71 @@ func Build(projectPath string) error {
                         item.onmouseout = () => item.style.background = '#262626';
                         
                         item.onclick = () => {
-                             const sourcePath = document.body.getAttribute('data-source-path');
-                             fetch('/admin/api/insert-partial', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                                body: 'target_file=' + encodeURIComponent(sourcePath) + '&partial_name=' + encodeURIComponent('partials/' + file)
-                             }).then(res => {
-                                 if (res.ok) {
-                                     window.location.reload();
-                                 } else {
-                                     alert('Error inserting partial');
+                             let body = 'target_file=' + encodeURIComponent(sourcePath);
+                             
+                             if (extraParams.type === 'container') {
+                                 body += '&container_name=' + encodeURIComponent(file);
+                                 fetch('/admin/api/insert-container', {
+                                    method: 'POST',
+                                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                                    body: body
+                                 }).then(res => { if(res.ok) window.location.reload(); else alert('Error'); });
+                             } else if (extraParams.type === 'component') {
+                                 body += '&component_name=' + encodeURIComponent(file);
+                                 if (extraParams.containerIndex) {
+                                     body += '&container_token_index=' + encodeURIComponent(extraParams.containerIndex);
                                  }
-                             });
+                                 fetch('/admin/api/insert-component', {
+                                    method: 'POST',
+                                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                                    body: body
+                                 }).then(res => { if(res.ok) window.location.reload(); else alert('Error'); });
+                             }
                         };
                         list.appendChild(item);
                     });
-                    
-                    modal.style.display = 'flex';
                 });
+      }
+
+      // 4. Interaction Handlers
+      document.addEventListener('click', function(e) {
+        // Add Container (Global Button)
+        if (e.target.closest('.thispage-add-btn')) {
+             e.preventDefault();
+             e.stopPropagation();
+             const sourcePath = document.body.getAttribute('data-source-path');
+             showModal('Add Container', '/admin/api/containers', sourcePath, { type: 'container' });
              return;
         }
 
-        // Block Click Handler
-        if (e.target.classList.contains('thispage-block')) {
+        // Add Component (Click on Container)
+        if (e.target.classList.contains('thispage-container')) {
             e.preventDefault();
             e.stopPropagation();
             
-            let el = e.target;
-            
-            // Helper to find previous comment sibling
-            function findMarker(element) {
-                let ptr = element;
-                while (ptr && ptr !== document.body) {
-                    let balance = 0;
-                    let sibling = ptr.previousSibling;
-                    while (sibling) {
-                        if (sibling.nodeType === 8) { // Comment
-                            const text = sibling.nodeValue.trim();
-                            if (text === '__TP_END_INC__') {
-                                balance++;
-                            } else if (text.startsWith('__TP_INC__')) {
-                                if (balance === 0) {
-                                    const fileMatch = text.match(/file=\"([^\"]+)\"/);
-                                    const indexMatch = text.match(/token_index=\"([^\"]+)\"/);
-                                    if (fileMatch && indexMatch) {
-                                        return { file: fileMatch[1], index: indexMatch[1] };
-                                    }
-                                } else {
-                                    balance--;
-                                }
-                            }
-                        }
-                        sibling = sibling.previousSibling;
-                    }
-                    ptr = ptr.parentNode;
-                }
-                return null;
-            }
-            
-            const info = findMarker(el);
-            
+            // Find container's token index
+            const info = findMarker(e.target);
             if (info) {
-                if (confirm('Delete this block included from ' + info.file + '?')) {
+                const sourcePath = info.file; // Use the file where the container is defined/included?
+                // Actually, if container is included in index.html, info.file is index.html.
+                // We want to insert INTO the container structure in index.html.
+                // Logic in PostAdminInsertComponent handles insertion into Layout.
+                
+                showModal('Add Component', '/admin/api/components', sourcePath, { type: 'component', containerIndex: info.index });
+            } else {
+                alert("Container source not found.");
+            }
+            return;
+        }
+
+        // Edit/Delete Component
+        if (e.target.classList.contains('thispage-component')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const info = findMarker(e.target);
+            if (info) {
+                if (confirm('Delete this component?')) {
                     fetch('/admin/api/delete-block', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -426,8 +469,6 @@ func Build(projectPath string) error {
                         }
                     });
                 }
-            } else {
-                alert("Could not identify the source of this block. It might be hardcoded in the layout.");
             }
             return;
         }
@@ -435,9 +476,7 @@ func Build(projectPath string) error {
         const link = e.target.closest('a');
         if (link && link.href) {
             const url = new URL(link.href, window.location.origin);
-            // Only modify internal links
             if (url.origin === window.location.origin) {
-                // specific check to avoid duplicating or messing up non-nav links
                 if (!url.searchParams.has('is_admin')) {
                     url.searchParams.set('is_admin', 'true');
                     link.href = url.toString();

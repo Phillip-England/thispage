@@ -41,7 +41,7 @@ func Start(projectPath string) {
 		}
 	}()
 
-	for _, dir := range []string{"templates", "partials"} {
+	for _, dir := range []string{"templates", "components"} {
 		path := filepath.Join(projectPath, dir)
 		if err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 			if err != nil {

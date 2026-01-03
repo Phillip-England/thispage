@@ -28,7 +28,7 @@ func New(name string, force bool) error {
 	}
 
 	// Define subdirectory paths
-	dirs := []string{"live", "partials", "templates", "templates/posts", "static", "layouts"}
+	dirs := []string{"live", "components", "containers", "templates", "templates/posts", "static", "layouts"}
 
 	for _, dir := range dirs {
 		dirPath := filepath.Join(name, dir)
@@ -40,7 +40,8 @@ func New(name string, force bool) error {
 	}
 
 	templatesDirPath := filepath.Join(name, "templates")
-	partialsDirPath := filepath.Join(name, "partials")
+	componentsDirPath := filepath.Join(name, "components")
+    containersDirPath := filepath.Join(name, "containers")
     layoutsDirPath := filepath.Join(name, "layouts")
 
     guestLayoutHTML := `<!DOCTYPE html>
@@ -53,7 +54,7 @@ func New(name string, force bool) error {
 </head>
 <body class="bg-neutral-950 text-neutral-300 font-sans antialiased min-h-screen relative">
   <div class="max-w-4xl mx-auto py-20 px-6">
-    {{ include "./partials/navigation.html" }}
+    {{ include "./components/navigation.html" }}
     
     <main class="mt-12 min-h-[50vh] relative">
         {{ slot "main" }}
@@ -66,7 +67,7 @@ func New(name string, force bool) error {
             +
         </div>
         <div class="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-neutral-900 text-white text-xs px-3 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Add Block
+            Add Container
         </div>
   </div>
 </body>
@@ -77,17 +78,18 @@ func New(name string, force bool) error {
 {{ block "title" }}Home - This Page{{ endblock }}
 
 {{ block "main" }}
-    {{ include "./partials/hero.html" }}
+    {{ include "./components/hero.html" }}
     
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-8 py-12">
-        {{ include "./partials/feature_item.html" icon="⚡" title="Fast" description="Built for speed and performance from the ground up." }}
-        {{ include "./partials/feature_item.html" icon="🎨" title="Beautiful" description="Stunning default styles using Tailwind CSS." }}
-        {{ include "./partials/feature_item.html" icon="🛠" title="Flexible" description="Easy to customize and extend for your needs." }}
-    </section>
+    {{ include "./containers/flex_row.html" }}
+        <!-- Manual insertion for demo, ideally using slots or just appending -->
+        {{ include "./components/feature_item.html" icon="⚡" title="Fast" description="Built for speed and performance from the ground up." }}
+        {{ include "./components/feature_item.html" icon="🎨" title="Beautiful" description="Stunning default styles using Tailwind CSS." }}
+        {{ include "./components/feature_item.html" icon="🛠" title="Flexible" description="Easy to customize and extend for your needs." }}
+    <!-- End Container -->
 
-    {{ include "./partials/content.html" }}
-    {{ include "./partials/cta.html" title="Ready to start?" text="Get your project up and running in seconds." button_text="Get Started" button_link="/pricing" }}
-    {{ include "./partials/footer.html" }}
+    {{ include "./components/content.html" }}
+    {{ include "./components/cta.html" title="Ready to start?" text="Get your project up and running in seconds." button_text="Get Started" button_link="/pricing" }}
+    {{ include "./components/footer.html" }}
 {{ endblock }}
 
 {{ endlayout }}`
@@ -95,41 +97,39 @@ func New(name string, force bool) error {
     aboutPageHTML := `{{ layout "./layouts/guest_layout.html" }}
 {{ block "title" }}About Us - This Page{{ endblock }}
 {{ block "main" }}
-    {{ include "./partials/page_header.html" title="About Our Team" subtitle="We are building the future of content management." }}
+    {{ include "./components/page_header.html" title="About Our Team" subtitle="We are building the future of content management." }}
     
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-12 py-12">
-        {{ include "./partials/team_member.html" name="Sarah Connor" role="Founder & CEO" image="https://i.pravatar.cc/300?img=1" }}
-        {{ include "./partials/team_member.html" name="John Smith" role="CTO" image="https://i.pravatar.cc/300?img=3" }}
-        {{ include "./partials/team_member.html" name="Emily Blunt" role="Head of Design" image="https://i.pravatar.cc/300?img=5" }}
-    </section>
+    {{ include "./containers/flex_row.html" }}
+        {{ include "./components/team_member.html" name="Sarah Connor" role="Founder & CEO" image="https://i.pravatar.cc/300?img=1" }}
+        {{ include "./components/team_member.html" name="John Smith" role="CTO" image="https://i.pravatar.cc/300?img=3" }}
+        {{ include "./components/team_member.html" name="Emily Blunt" role="Head of Design" image="https://i.pravatar.cc/300?img=5" }}
     
-    {{ include "./partials/content.html" }}
-    {{ include "./partials/footer.html" }}
+    {{ include "./components/content.html" }}
+    {{ include "./components/footer.html" }}
 {{ endblock }}
 {{ endlayout }}`
 
     pricingPageHTML := `{{ layout "./layouts/guest_layout.html" }}
 {{ block "title" }}Pricing - This Page{{ endblock }}
 {{ block "main" }}
-    {{ include "./partials/page_header.html" title="Simple Pricing" subtitle="Choose the plan that fits your needs." }}
+    {{ include "./components/page_header.html" title="Simple Pricing" subtitle="Choose the plan that fits your needs." }}
     
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-8 py-12">
-        {{ include "./partials/pricing_card.html" plan="Starter" price="0" description="Perfect for personal projects." }}
-        {{ include "./partials/pricing_card.html" plan="Pro" price="29" description="For growing teams and businesses." }}
-        {{ include "./partials/pricing_card.html" plan="Enterprise" price="99" description="Advanced features for large scale." }}
-    </section>
+    {{ include "./containers/flex_row.html" }}
+        {{ include "./components/pricing_card.html" plan="Starter" price="0" description="Perfect for personal projects." }}
+        {{ include "./components/pricing_card.html" plan="Pro" price="29" description="For growing teams and businesses." }}
+        {{ include "./components/pricing_card.html" plan="Enterprise" price="99" description="Advanced features for large scale." }}
     
-    {{ include "./partials/cta.html" title="Not sure?" text="Contact our sales team for a custom quote." button_text="Contact Sales" button_link="/contact" }}
-    {{ include "./partials/footer.html" }}
+    {{ include "./components/cta.html" title="Not sure?" text="Contact our sales team for a custom quote." button_text="Contact Sales" button_link="/contact" }}
+    {{ include "./components/footer.html" }}
 {{ endblock }}
 {{ endlayout }}`
 
     contactPageHTML := `{{ layout "./layouts/guest_layout.html" }}
 {{ block "title" }}Contact - This Page{{ endblock }}
 {{ block "main" }}
-    {{ include "./partials/page_header.html" title="Get in Touch" subtitle="We'd love to hear from you." }}
+    {{ include "./components/page_header.html" title="Get in Touch" subtitle="We'd love to hear from you." }}
     
-    <div class="max-w-2xl mx-auto py-12">
+    <div class="max-w-2xl mx-auto py-12 thispage-component">
         <form class="space-y-6">
             <div>
                 <label class="block text-sm font-medium text-neutral-400 mb-2">Name</label>
@@ -147,11 +147,11 @@ func New(name string, force bool) error {
         </form>
     </div>
 
-    {{ include "./partials/footer.html" }}
+    {{ include "./components/footer.html" }}
 {{ endblock }}
 {{ endlayout }}`
 
-	defaultNavigationHTML := `<nav class="flex gap-6 border-b border-neutral-800 pb-6 w-full mb-8 items-center">
+	defaultNavigationHTML := `<nav class="flex gap-6 border-b border-neutral-800 pb-6 w-full mb-8 items-center thispage-component">
   <a href='/' class="font-bold text-white text-lg mr-auto">ThisPage</a>
   <a href='/' class="text-xs uppercase tracking-widest hover:text-white transition-colors text-neutral-400">Home</a>
   <a href='/about' class="text-xs uppercase tracking-widest hover:text-white transition-colors text-neutral-400">About</a>
@@ -159,12 +159,12 @@ func New(name string, force bool) error {
   <a href='/contact' class="text-xs uppercase tracking-widest hover:text-white transition-colors text-neutral-400">Contact</a>
 </nav>`
 
-    defaultHeroHTML := `<header class="py-20 text-center thispage-block">
+    defaultHeroHTML := `<header class="py-20 text-center thispage-component">
     <h1 class="text-5xl font-bold text-white tracking-tight mb-6">Welcome to Your Site</h1>
     <p class="text-xl text-neutral-400 max-w-2xl mx-auto">This is a hero section. It's a great place to introduce your brand or project.</p>
 </header>`
 
-    defaultContentHTML := `<section class="py-12 thispage-block">
+    defaultContentHTML := `<section class="py-12 thispage-component">
     <h2 class="text-2xl font-bold text-white mb-4">Content Section</h2>
     <p class="text-neutral-400 leading-relaxed">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
@@ -172,11 +172,11 @@ func New(name string, force bool) error {
     </p>
 </section>`
 
-    defaultFooterHTML := `<footer class="border-t border-neutral-800 py-8 mt-12 text-center text-sm text-neutral-600 thispage-block">
+    defaultFooterHTML := `<footer class="border-t border-neutral-800 py-8 mt-12 text-center text-sm text-neutral-600 thispage-component">
     &copy; 2024 Your Company. All rights reserved.
 </footer>`
 
-    defaultCardHTML := `<div class="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden hover:border-neutral-700 transition-colors thispage-block group">
+    defaultCardHTML := `<div class="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden hover:border-neutral-700 transition-colors thispage-component group">
   <div class="h-48 bg-neutral-800 relative overflow-hidden">
       <img src="{{ prop "image" }}" alt="{{ prop "title" }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
   </div>
@@ -190,7 +190,7 @@ func New(name string, force bool) error {
   </div>
 </div>`
 
-    defaultCtaHTML := `<section class="py-24 text-center bg-gradient-to-b from-neutral-900 to-black border-y border-neutral-800 thispage-block">
+    defaultCtaHTML := `<section class="py-24 text-center bg-gradient-to-b from-neutral-900 to-black border-y border-neutral-800 thispage-component">
     <div class="max-w-3xl mx-auto px-6">
         <h2 class="text-4xl font-bold text-white mb-6 tracking-tight">{{ prop "title" }}</h2>
         <p class="text-lg text-neutral-400 mb-10 leading-relaxed">{{ prop "text" }}</p>
@@ -200,7 +200,7 @@ func New(name string, force bool) error {
     </div>
 </section>`
 
-    defaultTestimonialHTML := `<div class="bg-neutral-900/50 p-8 border border-neutral-800 rounded-2xl thispage-block backdrop-blur-sm">
+    defaultTestimonialHTML := `<div class="bg-neutral-900/50 p-8 border border-neutral-800 rounded-2xl thispage-component backdrop-blur-sm">
   <div class="flex gap-1 text-blue-500 mb-6">
       <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
       <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
@@ -220,12 +220,12 @@ func New(name string, force bool) error {
   </div>
 </div>`
 
-    defaultPageHeaderHTML := `<div class="py-16 border-b border-neutral-800 mb-12 thispage-block">
+    defaultPageHeaderHTML := `<div class="py-16 border-b border-neutral-800 mb-12 thispage-component">
     <h1 class="text-5xl font-bold text-white mb-4 tracking-tight">{{ prop "title" }}</h1>
     <p class="text-xl text-neutral-400 max-w-2xl">{{ prop "subtitle" }}</p>
 </div>`
 
-    defaultFeatureItemHTML := `<div class="p-6 border border-neutral-800 rounded-lg thispage-block hover:bg-neutral-900 transition-colors">
+    defaultFeatureItemHTML := `<div class="p-6 border border-neutral-800 rounded-lg thispage-component hover:bg-neutral-900 transition-colors">
     <div class="w-12 h-12 bg-blue-900/30 text-blue-500 rounded-full flex items-center justify-center mb-4 text-2xl">
         {{ prop "icon" }}
     </div>
@@ -233,14 +233,14 @@ func New(name string, force bool) error {
     <p class="text-neutral-400 text-sm leading-relaxed">{{ prop "description" }}</p>
 </div>`
 
-    defaultPricingCardHTML := `<div class="border border-neutral-800 p-8 rounded-2xl bg-neutral-900/20 thispage-block hover:border-blue-600 transition-colors relative flex flex-col">
+    defaultPricingCardHTML := `<div class="border border-neutral-800 p-8 rounded-2xl bg-neutral-900/20 thispage-component hover:border-blue-600 transition-colors relative flex flex-col">
     <h3 class="text-lg font-medium text-neutral-400 mb-4">{{ prop "plan" }}</h3>
     <div class="text-4xl font-bold text-white mb-6">${{ prop "price" }}<span class="text-sm text-neutral-500 font-normal">/mo</span></div>
     <p class="text-sm text-neutral-400 mb-8 border-b border-neutral-800 pb-8 flex-grow">{{ prop "description" }}</p>
     <a href="#" class="block w-full bg-white text-black font-bold text-center py-3 rounded hover:bg-neutral-200 transition-colors mt-auto">Choose Plan</a>
 </div>`
 
-    defaultTeamMemberHTML := `<div class="text-center thispage-block group">
+    defaultTeamMemberHTML := `<div class="text-center thispage-component group">
     <div class="w-32 h-32 mx-auto rounded-full overflow-hidden mb-4 border-2 border-neutral-800 group-hover:border-blue-500 transition-colors">
         <img src="{{ prop "image" }}" alt="{{ prop "name" }}" class="w-full h-full object-cover">
     </div>
@@ -248,23 +248,28 @@ func New(name string, force bool) error {
     <p class="text-blue-500 text-xs uppercase tracking-widest mt-1">{{ prop "role" }}</p>
 </div>`
 
+    defaultContainerHTML := `<section class="flex flex-col md:flex-row gap-8 py-12 thispage-container">
+    {{ slot "content" }}
+</section>`
+
 	filesToCreate := map[string]string{
 		filepath.Join(templatesDirPath, "index.html"):         defaultIndexHTML,
 		filepath.Join(templatesDirPath, "about.html"):         aboutPageHTML,
 		filepath.Join(templatesDirPath, "pricing.html"):       pricingPageHTML,
 		filepath.Join(templatesDirPath, "contact.html"):       contactPageHTML,
         filepath.Join(layoutsDirPath, "guest_layout.html"):    guestLayoutHTML,
-		filepath.Join(partialsDirPath, "navigation.html"):     defaultNavigationHTML,
-		filepath.Join(partialsDirPath, "hero.html"):           defaultHeroHTML,
-		filepath.Join(partialsDirPath, "content.html"):        defaultContentHTML,
-		filepath.Join(partialsDirPath, "footer.html"):          defaultFooterHTML,
-        filepath.Join(partialsDirPath, "card.html"):           defaultCardHTML,
-        filepath.Join(partialsDirPath, "cta.html"):            defaultCtaHTML,
-        filepath.Join(partialsDirPath, "testimonial.html"):    defaultTestimonialHTML,
-        filepath.Join(partialsDirPath, "page_header.html"):    defaultPageHeaderHTML,
-        filepath.Join(partialsDirPath, "feature_item.html"):   defaultFeatureItemHTML,
-        filepath.Join(partialsDirPath, "pricing_card.html"):   defaultPricingCardHTML,
-        filepath.Join(partialsDirPath, "team_member.html"):    defaultTeamMemberHTML,
+		filepath.Join(componentsDirPath, "navigation.html"):     defaultNavigationHTML,
+		filepath.Join(componentsDirPath, "hero.html"):           defaultHeroHTML,
+		filepath.Join(componentsDirPath, "content.html"):        defaultContentHTML,
+		filepath.Join(componentsDirPath, "footer.html"):          defaultFooterHTML,
+        filepath.Join(componentsDirPath, "card.html"):           defaultCardHTML,
+        filepath.Join(componentsDirPath, "cta.html"):            defaultCtaHTML,
+        filepath.Join(componentsDirPath, "testimonial.html"):    defaultTestimonialHTML,
+        filepath.Join(componentsDirPath, "page_header.html"):    defaultPageHeaderHTML,
+        filepath.Join(componentsDirPath, "feature_item.html"):   defaultFeatureItemHTML,
+        filepath.Join(componentsDirPath, "pricing_card.html"):   defaultPricingCardHTML,
+        filepath.Join(componentsDirPath, "team_member.html"):    defaultTeamMemberHTML,
+        filepath.Join(containersDirPath, "flex_row.html"):       defaultContainerHTML,
 		filepath.Join(name, "static/input.css"): "@import \"tailwindcss\";\n",
 	}
 

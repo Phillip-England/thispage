@@ -70,16 +70,25 @@ func Serve(projectPath string) error {
 
     // Custom handler for live directory to support clean URLs (extensionless .html)
     app.Handle("GET /", func(w http.ResponseWriter, r *http.Request) {
-        // Auth Check for Public Pages
-        if auth.IsAuthenticated(r) {
-             if r.URL.Query().Get("is_admin") != "true" {
-                 // Redirect to append query param
-                 q := r.URL.Query()
-                 q.Set("is_admin", "true")
-                 r.URL.RawQuery = q.Encode()
-                 http.Redirect(w, r, r.URL.String(), http.StatusTemporaryRedirect)
-                 return
-             }
+        isAuthenticated := auth.IsAuthenticated(r)
+        isAdminParam := r.URL.Query().Get("is_admin") == "true"
+
+        // If trying to access admin mode but not authenticated, strip param
+        if isAdminParam && !isAuthenticated {
+             q := r.URL.Query()
+             q.Del("is_admin")
+             r.URL.RawQuery = q.Encode()
+             http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
+             return
+        }
+
+        // If authenticated but missing param, add it
+        if isAuthenticated && !isAdminParam {
+             q := r.URL.Query()
+             q.Set("is_admin", "true")
+             r.URL.RawQuery = q.Encode()
+             http.Redirect(w, r, r.URL.String(), http.StatusTemporaryRedirect)
+             return
         }
 
         urlPath := r.URL.Path
@@ -139,8 +148,10 @@ func Serve(projectPath string) error {
 	app.Handle("POST /admin/files/create-dir", authMiddleware(routes.PostAdminDirCreate))
     
     // API Routes
-    app.Handle("GET /admin/api/partials", authMiddleware(routes.GetAdminPartials))
-    app.Handle("POST /admin/api/insert-partial", authMiddleware(routes.PostAdminInsertPartial))
+    app.Handle("GET /admin/api/components", authMiddleware(routes.GetAdminComponents))
+    app.Handle("GET /admin/api/containers", authMiddleware(routes.GetAdminContainers))
+    app.Handle("POST /admin/api/insert-component", authMiddleware(routes.PostAdminInsertComponent))
+    app.Handle("POST /admin/api/insert-container", authMiddleware(routes.PostAdminInsertContainer))
     app.Handle("POST /admin/api/delete-block", authMiddleware(routes.PostAdminDeleteBlock))
     
 	app.Handle("GET /admin/logout", routes.GetAdminLogout)

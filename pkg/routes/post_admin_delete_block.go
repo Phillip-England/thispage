@@ -39,9 +39,9 @@ func PostAdminDeleteBlock(w http.ResponseWriter, r *http.Request) {
         return
     }
     
-    // Only allow editing templates/partials
+    // Only allow editing templates/components
     allowed := false
-    if strings.HasPrefix(relPath, "templates/") || strings.HasPrefix(relPath, "partials/") {
+    if strings.HasPrefix(relPath, "templates/") || strings.HasPrefix(relPath, "components/") {
         allowed = true
     }
     if !allowed {

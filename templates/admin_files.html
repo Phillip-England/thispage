@@ -201,7 +201,7 @@
         let ext = "";
         if (dir.startsWith("templates") && !dir.startsWith("templates/static")) {
             ext = ".html";
-        } else if (dir.startsWith("partials")) {
+        } else if (dir.startsWith("components") || dir.startsWith("containers")) {
             ext = ".html";
         }
         
@@ -220,7 +220,7 @@
         let ext = "";
         if (dir.startsWith("templates") && !dir.startsWith("templates/static")) {
             ext = ".html";
-        } else if (dir.startsWith("partials")) {
+        } else if (dir.startsWith("components") || dir.startsWith("containers")) {
             ext = ".html";
         }
         

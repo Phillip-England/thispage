@@ -36,7 +36,7 @@ func PostAdminDirCreate(w http.ResponseWriter, r *http.Request) {
 
     // Security: Only allow creating dirs inside allowed roots
     allowed := false
-    if strings.HasPrefix(parentDirSlash, "templates") || strings.HasPrefix(parentDirSlash, "partials") || strings.HasPrefix(parentDirSlash, "static") {
+    if strings.HasPrefix(parentDirSlash, "templates") || strings.HasPrefix(parentDirSlash, "components") || strings.HasPrefix(parentDirSlash, "static") {
         allowed = true
     }
 
