@@ -15,7 +15,8 @@ type FileNode struct {
 	Name     string
 	IsDir    bool
 	Path     string
-	Link     string // URL to navigate to when clicked, empty if not clickable
+	Link     string // URL to navigate to when clicked (edit), empty if not clickable
+	PageLink string // URL to view the rendered page (templates only)
 	Children []*FileNode
 }
 
@@ -109,11 +110,13 @@ func buildTree(absPath string, node *FileNode, rootDir string, dirs *[]string) e
              *dirs = append(*dirs, relPath)
         }
 
+		editLink, pageLink := computeLinks(relPath, entry.IsDir())
 		child := &FileNode{
-			Name:  entry.Name(),
-			IsDir: entry.IsDir(),
-			Path:  relPath,
-			Link:  computeLink(relPath, entry.Name(), entry.IsDir()),
+			Name:     entry.Name(),
+			IsDir:    entry.IsDir(),
+			Path:     relPath,
+			Link:     editLink,
+			PageLink: pageLink,
 		}
 
 		if entry.IsDir() {
@@ -159,11 +162,24 @@ func isAllowedFile(relPath string) bool {
 	return false
 }
 
-func computeLink(relPath, name string, isDir bool) string {
+func computeLinks(relPath string, isDir bool) (editLink, pageLink string) {
 	if isDir {
-		return ""
+		return "", ""
 	}
-    
-    // Always go to view/edit page
-    return "/admin/files/view?path=" + relPath
+
+	// Edit link for all files
+	editLink = "/admin/files/view?path=" + relPath
+
+	// Page link only for templates (viewable pages)
+	if strings.HasPrefix(relPath, "templates/") && strings.HasSuffix(relPath, ".html") {
+		// Convert templates/foo/bar.html -> /foo/bar?is_admin=true
+		pagePath := strings.TrimPrefix(relPath, "templates")
+		pagePath = strings.TrimSuffix(pagePath, ".html")
+		if pagePath == "/index" {
+			pagePath = "/"
+		}
+		pageLink = pagePath + "?is_admin=true"
+	}
+
+	return editLink, pageLink
 }

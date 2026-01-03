@@ -240,7 +240,7 @@ func Build(projectPath string) error {
             // Inject data-source-path into body
             dataSourcePath := filepath.Join("templates", relativePath)
             if strings.Contains(compiledContent, "<body") {
-                compiledContent = strings.Replace(compiledContent, "<body", fmt.Sprintf("<body data-source-path=\"%%s\"", dataSourcePath), 1)
+                compiledContent = strings.Replace(compiledContent, "<body", fmt.Sprintf("<body data-source-path=\"%s\"", dataSourcePath), 1)
             }
 
             // Inject Admin Mode Script

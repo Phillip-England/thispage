@@ -82,6 +82,48 @@ func IsAuthenticated(r *http.Request) bool {
 	return true
 }
 
+// IsAuthenticatedAndRefresh checks authentication and extends the session
+func IsAuthenticatedAndRefresh(w http.ResponseWriter, r *http.Request) bool {
+	cookie, err := r.Cookie("session_key")
+	if err != nil {
+		return false
+	}
+
+	key := cookie.Value
+	tokenEnv := os.Getenv("ADMIN_SESSION_TOKEN")
+
+	var tokenDb string
+	var expiresAt time.Time
+
+	row := database.DB.QueryRow("SELECT token, expires_at FROM session WHERE key = ?", key)
+	err = row.Scan(&tokenDb, &expiresAt)
+	if err != nil {
+		return false
+	}
+
+	if time.Now().After(expiresAt) {
+		return false
+	}
+
+	if tokenDb != tokenEnv {
+		return false
+	}
+
+	// Extend session by 15 more minutes
+	newExpiry := time.Now().Add(15 * time.Minute)
+	database.DB.Exec("UPDATE session SET expires_at = ? WHERE key = ?", newExpiry, key)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_key",
+		Value:    key,
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  newExpiry,
+	})
+
+	return true
+}
+
 func DeleteSession(w http.ResponseWriter, r *http.Request) error {
     cookie, err := r.Cookie("session_key")
     if err != nil {

@@ -70,8 +70,15 @@ func Serve(projectPath string) error {
 
     // Custom handler for live directory to support clean URLs (extensionless .html)
     app.Handle("GET /", func(w http.ResponseWriter, r *http.Request) {
-        isAuthenticated := auth.IsAuthenticated(r)
         isAdminParam := r.URL.Query().Get("is_admin") == "true"
+
+        // Use refresh version when in admin mode to extend session
+        var isAuthenticated bool
+        if isAdminParam {
+            isAuthenticated = auth.IsAuthenticatedAndRefresh(w, r)
+        } else {
+            isAuthenticated = auth.IsAuthenticated(r)
+        }
 
         // If trying to access admin mode but not authenticated, strip param
         if isAdminParam && !isAuthenticated {
@@ -128,7 +135,7 @@ func Serve(projectPath string) error {
 
     authMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
         return func(w http.ResponseWriter, r *http.Request) {
-            if !auth.IsAuthenticated(r) {
+            if !auth.IsAuthenticatedAndRefresh(w, r) {
                 http.Redirect(w, r, "/login", http.StatusSeeOther)
                 return
             }
