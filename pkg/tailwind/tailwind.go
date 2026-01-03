@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // Version is the Tailwind CSS version to install
+// Update this constant to upgrade Tailwind for all thispage projects
 const Version = "4.1.18"
 
 // BaseURL is the GitHub releases download URL pattern
@@ -75,6 +77,40 @@ func GetBinaryPath() (string, error) {
 	return filepath.Join(installDir, binaryName), nil
 }
 
+// GetVersionFilePath returns the path to the version file
+func GetVersionFilePath() (string, error) {
+	installDir, err := GetInstallDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(installDir, ".tailwindcss-version"), nil
+}
+
+// GetInstalledVersion reads the installed version from the version file
+func GetInstalledVersion() (string, error) {
+	versionPath, err := GetVersionFilePath()
+	if err != nil {
+		return "", err
+	}
+
+	data, err := os.ReadFile(versionPath)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(data)), nil
+}
+
+// WriteVersionFile writes the current version to the version file
+func WriteVersionFile() error {
+	versionPath, err := GetVersionFilePath()
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(versionPath, []byte(Version), 0644)
+}
+
 // IsInstalled checks if tailwindcss is already installed
 func IsInstalled() bool {
 	binaryPath, err := GetBinaryPath()
@@ -87,12 +123,26 @@ func IsInstalled() bool {
 		return false
 	}
 
-	// Check if it's a file and is executable (on Unix)
 	if info.IsDir() {
 		return false
 	}
 
 	return true
+}
+
+// NeedsUpdate checks if the installed version differs from the expected version
+func NeedsUpdate() bool {
+	if !IsInstalled() {
+		return true
+	}
+
+	installedVersion, err := GetInstalledVersion()
+	if err != nil {
+		// No version file means we need to update
+		return true
+	}
+
+	return installedVersion != Version
 }
 
 // Download downloads the tailwindcss binary for the current platform
@@ -103,7 +153,7 @@ func Download() error {
 	}
 
 	downloadURL := fmt.Sprintf(BaseURL, Version, binaryName)
-	fmt.Printf("Downloading Tailwind CSS v%s from %s...\n", Version, downloadURL)
+	fmt.Printf("Downloading Tailwind CSS v%s...\n", Version)
 
 	// Create install directory
 	installDir, err := GetInstallDir()
@@ -164,27 +214,38 @@ func Download() error {
 		return fmt.Errorf("failed to move binary to final location: %w", err)
 	}
 
+	// Write version file
+	if err := WriteVersionFile(); err != nil {
+		return fmt.Errorf("failed to write version file: %w", err)
+	}
+
 	fmt.Printf("Tailwind CSS v%s installed to %s\n", Version, binaryPath)
 	return nil
 }
 
-// EnsureInstalled checks if tailwindcss is installed, and installs it if not
+// EnsureInstalled checks if the correct version of tailwindcss is installed,
+// and installs/updates it if needed. Always uses the thispage-managed binary.
 func EnsureInstalled() (string, error) {
-	// First check if it's in PATH
-	// We skip this since we want to manage our own installation
-
-	// Check if we have it installed in our directory
-	if IsInstalled() {
-		binaryPath, _ := GetBinaryPath()
-		fmt.Printf("Tailwind CSS found at %s\n", binaryPath)
-		return binaryPath, nil
-	}
-
-	// Not installed, download it
-	fmt.Println("Tailwind CSS not found. Installing...")
-	if err := Download(); err != nil {
+	binaryPath, err := GetBinaryPath()
+	if err != nil {
 		return "", err
 	}
 
-	return GetBinaryPath()
+	// Check if we need to install or update
+	if NeedsUpdate() {
+		installedVersion, _ := GetInstalledVersion()
+		if installedVersion != "" {
+			fmt.Printf("Tailwind CSS version mismatch (installed: %s, required: %s). Updating...\n", installedVersion, Version)
+		} else {
+			fmt.Println("Tailwind CSS not found. Installing...")
+		}
+
+		if err := Download(); err != nil {
+			return "", err
+		}
+	} else {
+		fmt.Printf("Tailwind CSS v%s ready\n", Version)
+	}
+
+	return binaryPath, nil
 }

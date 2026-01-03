@@ -9,12 +9,14 @@ import (
 var forceInit bool
 
 var initCmd = &cobra.Command{
-	Use:   "init <project-name>",
+	Use:   "init <project-name> <username> <password>",
 	Short: "Initialize a new thispage project",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
-		err := project.New(projectName, forceInit)
+		username := args[1]
+		password := args[2]
+		err := project.New(projectName, forceInit, username, password)
 		if err != nil {
 			fmt.Printf("Error initializing project: %v\n", err)
 			return

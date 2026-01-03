@@ -9,10 +9,12 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/phillip-england/thispage/pkg/auth"
+	"github.com/phillip-england/thispage/pkg/credentials"
 	"github.com/phillip-england/thispage/pkg/database"
 	"github.com/phillip-england/thispage/pkg/keys"
 	"github.com/phillip-england/thispage/pkg/routes"
 	"github.com/phillip-england/thispage/pkg/tailwind"
+	admintemplates "github.com/phillip-england/thispage/templates"
 	"github.com/phillip-england/vii/vii"
 )
 
@@ -25,8 +27,12 @@ func Serve(projectPath string) error {
 	absProjectPath := filepath.Join(cwd, projectPath)
 	liveDirPath := filepath.Join(absProjectPath, "live")
 
-    // Load .env
-    _ = godotenv.Load(filepath.Join(absProjectPath, ".env"))
+	// Load .env
+	_ = godotenv.Load(filepath.Join(absProjectPath, ".env"))
+
+	if _, err := credentials.EnsureSeed(); err != nil {
+		return fmt.Errorf("failed to initialize seed: %w", err)
+	}
 
     // Init Database
     if err := database.Init(absProjectPath); err != nil {
@@ -57,7 +63,7 @@ func Serve(projectPath string) error {
 	app := vii.NewApp()
 	app.SetContext(keys.ProjectPath, absProjectPath)
 	
-	if err := app.LoadTemplates("./templates", nil); err != nil {
+	if err := app.LoadTemplatesFS(admintemplates.AdminFS, nil); err != nil {
 		return err
 	}
 
@@ -162,5 +168,3 @@ func Serve(projectPath string) error {
 
 	return app.Serve("8080")
 }
-
-

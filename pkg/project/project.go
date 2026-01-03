@@ -4,12 +4,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/phillip-england/thispage/pkg/credentials"
 )
 
 // New creates a new directory with the given name, and standard subdirectories and files.
-func New(name string, force bool) error {
+func New(name string, force bool, username, password string) error {
 	if name == "" {
 		return fmt.Errorf("project name cannot be empty")
+	}
+	if username == "" || password == "" {
+		return fmt.Errorf("username and password are required")
 	}
 
     if force {
@@ -28,7 +33,7 @@ func New(name string, force bool) error {
 	}
 
 	// Define subdirectory paths
-	dirs := []string{"live", "components", "containers", "templates", "templates/posts", "static", "layouts"}
+	dirs := []string{"live", "components", "templates", "static", "layouts", ".thispage"}
 
 	for _, dir := range dirs {
 		dirPath := filepath.Join(name, dir)
@@ -97,6 +102,11 @@ func New(name string, force bool) error {
 			_ = os.RemoveAll(name)
 			return fmt.Errorf("could not create default file '%s': %w", filepath.Base(path), err)
 		}
+	}
+
+	if err := credentials.Save(name, username, password); err != nil {
+		_ = os.RemoveAll(name)
+		return fmt.Errorf("could not save credentials: %w", err)
 	}
 
 	return nil
