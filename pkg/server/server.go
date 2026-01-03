@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/joho/godotenv"
@@ -41,24 +40,9 @@ func Serve(projectPath string, port string) error {
     }
 
     // Ensure Tailwind CSS is installed and start watch process
-    tailwindPath, err := tailwind.EnsureInstalled()
-    if err != nil {
-        fmt.Printf("WARNING: Failed to install Tailwind CSS: %v\n", err)
+    if err := tailwind.StartWatch(absProjectPath); err != nil {
+        fmt.Printf("WARNING: Failed to start Tailwind CSS: %v\n", err)
         fmt.Println("CSS compilation will not be available.")
-    } else {
-        fmt.Println("Starting Tailwind CSS watch process...")
-        inputPath := filepath.Join(absProjectPath, "static", "input.css")
-        outputPath := filepath.Join(absProjectPath, "static", "output.css")
-
-        cmd := exec.Command(tailwindPath, "-i", inputPath, "-o", outputPath, "--watch")
-        cmd.Stdout = os.Stdout
-        cmd.Stderr = os.Stderr
-
-        go func() {
-            if err := cmd.Run(); err != nil {
-                fmt.Printf("Tailwind CSS process exited with error: %v\n", err)
-            }
-        }()
     }
 	
 	app := vii.NewApp()
@@ -161,7 +145,8 @@ func Serve(projectPath string, port string) error {
 	app.Handle("POST /admin/files/rename", authMiddleware(routes.PostAdminFileRename))
 	app.Handle("POST /admin/files/create", authMiddleware(routes.PostAdminFileCreate))
 	app.Handle("POST /admin/files/create-dir", authMiddleware(routes.PostAdminDirCreate))
-    
+	app.Handle("POST /admin/files/zip-upload", authMiddleware(routes.PostAdminZipUpload))
+
     // API Routes
     app.Handle("GET /admin/api/components", authMiddleware(routes.GetAdminComponents))
     

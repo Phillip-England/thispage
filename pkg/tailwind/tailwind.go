@@ -5,9 +5,19 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
+)
+
+// Global process management
+var (
+	watchCmd     *exec.Cmd
+	watchMutex   sync.Mutex
+	projectPath  string
+	tailwindPath string
 )
 
 // Version is the Tailwind CSS version to install
@@ -248,4 +258,101 @@ func EnsureInstalled() (string, error) {
 	}
 
 	return binaryPath, nil
+}
+
+// StartWatch starts the Tailwind CSS watch process for the given project
+func StartWatch(projPath string) error {
+	watchMutex.Lock()
+	defer watchMutex.Unlock()
+
+	// Store project path for restarts
+	projectPath = projPath
+
+	// Ensure Tailwind is installed
+	var err error
+	tailwindPath, err = EnsureInstalled()
+	if err != nil {
+		return fmt.Errorf("failed to ensure tailwind installed: %w", err)
+	}
+
+	return startWatchLocked()
+}
+
+// startWatchLocked starts the watch process (must hold watchMutex)
+func startWatchLocked() error {
+	if projectPath == "" || tailwindPath == "" {
+		return fmt.Errorf("tailwind not initialized, call StartWatch first")
+	}
+
+	inputPath := filepath.Join(projectPath, "static", "input.css")
+	outputPath := filepath.Join(projectPath, "static", "output.css")
+
+	fmt.Println("Starting Tailwind CSS watch process...")
+	watchCmd = exec.Command(tailwindPath, "-i", inputPath, "-o", outputPath, "--watch")
+	watchCmd.Stdout = os.Stdout
+	watchCmd.Stderr = os.Stderr
+
+	if err := watchCmd.Start(); err != nil {
+		return fmt.Errorf("failed to start tailwind watch: %w", err)
+	}
+
+	// Monitor the process in background
+	go func() {
+		err := watchCmd.Wait()
+		watchMutex.Lock()
+		defer watchMutex.Unlock()
+		if err != nil {
+			fmt.Printf("Tailwind CSS watch process exited: %v\n", err)
+		}
+		watchCmd = nil
+	}()
+
+	return nil
+}
+
+// StopWatch stops the Tailwind CSS watch process
+func StopWatch() {
+	watchMutex.Lock()
+	defer watchMutex.Unlock()
+
+	if watchCmd != nil && watchCmd.Process != nil {
+		fmt.Println("Stopping Tailwind CSS watch process...")
+		watchCmd.Process.Kill()
+		watchCmd = nil
+	}
+}
+
+// RestartWatch stops and restarts the Tailwind CSS watch process
+func RestartWatch() error {
+	watchMutex.Lock()
+	defer watchMutex.Unlock()
+
+	// Stop existing process
+	if watchCmd != nil && watchCmd.Process != nil {
+		fmt.Println("Stopping Tailwind CSS watch process for restart...")
+		watchCmd.Process.Kill()
+		watchCmd.Wait() // Wait for it to actually stop
+		watchCmd = nil
+	}
+
+	// Start new process
+	return startWatchLocked()
+}
+
+// BuildOnce runs a single Tailwind CSS build (not watch mode)
+func BuildOnce(projPath string) error {
+	twPath, err := EnsureInstalled()
+	if err != nil {
+		return err
+	}
+
+	inputPath := filepath.Join(projPath, "static", "input.css")
+	outputPath := filepath.Join(projPath, "static", "output.css")
+
+	fmt.Println("Building Tailwind CSS...")
+	cmd := exec.Command(twPath, "-i", inputPath, "-o", outputPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
