@@ -105,6 +105,55 @@ func New(name string, force bool) error {
     &copy; 2024 Your Company. All rights reserved.
 </footer>`
 
+    defaultCardHTML := `<div class="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden hover:border-neutral-700 transition-colors thispage-block group">
+  <div class="h-48 bg-neutral-800 relative overflow-hidden">
+      <img src="{{ prop "image" }}" alt="{{ prop "title" }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+  </div>
+  <div class="p-6">
+    <h3 class="text-xl font-bold text-white mb-2">{{ prop "title" }}</h3>
+    <p class="text-neutral-400 text-sm mb-4 leading-relaxed">{{ prop "description" }}</p>
+    <a href="{{ prop "link" }}" class="text-blue-500 hover:text-blue-400 text-xs font-bold uppercase tracking-widest inline-flex items-center gap-1">
+        Read More 
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+    </a>
+  </div>
+</div>`
+
+    defaultCtaHTML := `<section class="py-24 text-center bg-gradient-to-b from-neutral-900 to-black border-y border-neutral-800 thispage-block">
+    <div class="max-w-3xl mx-auto px-6">
+        <h2 class="text-4xl font-bold text-white mb-6 tracking-tight">{{ prop "title" }}</h2>
+        <p class="text-lg text-neutral-400 mb-10 leading-relaxed">{{ prop "text" }}</p>
+        <a href="{{ prop "button_link" }}" class="bg-white text-black font-bold py-4 px-10 rounded-full transition-all hover:scale-105 hover:bg-neutral-200 inline-block shadow-lg shadow-white/10">
+            {{ prop "button_text" }}
+        </a>
+    </div>
+</section>`
+
+    defaultTestimonialHTML := `<div class="bg-neutral-900/50 p-8 border border-neutral-800 rounded-2xl thispage-block backdrop-blur-sm">
+  <div class="flex gap-1 text-blue-500 mb-6">
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+  </div>
+  <p class="text-xl text-neutral-300 italic mb-8 leading-relaxed font-serif">"{{ prop "quote" }}"</p>
+  <div class="flex items-center gap-4 border-t border-neutral-800 pt-6">
+    <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
+        {{ prop "initials" }}
+    </div>
+    <div>
+        <h4 class="text-white font-bold text-sm">{{ prop "author" }}</h4>
+        <p class="text-neutral-500 text-[10px] uppercase tracking-widest font-bold">{{ prop "role" }}</p>
+    </div>
+  </div>
+</div>`
+
+    defaultPageHeaderHTML := `<div class="py-16 border-b border-neutral-800 mb-12 thispage-block">
+    <h1 class="text-5xl font-bold text-white mb-4 tracking-tight">{{ prop "title" }}</h1>
+    <p class="text-xl text-neutral-400 max-w-2xl">{{ prop "subtitle" }}</p>
+</div>`
+
 	filesToCreate := map[string]string{
 		filepath.Join(templatesDirPath, "index.html"):         defaultIndexHTML,
         filepath.Join(layoutsDirPath, "guest_layout.html"):    guestLayoutHTML,
@@ -112,6 +161,10 @@ func New(name string, force bool) error {
 		filepath.Join(partialsDirPath, "hero.html"):           defaultHeroHTML,
 		filepath.Join(partialsDirPath, "content.html"):        defaultContentHTML,
 		filepath.Join(partialsDirPath, "footer.html"):          defaultFooterHTML,
+        filepath.Join(partialsDirPath, "card.html"):           defaultCardHTML,
+        filepath.Join(partialsDirPath, "cta.html"):            defaultCtaHTML,
+        filepath.Join(partialsDirPath, "testimonial.html"):    defaultTestimonialHTML,
+        filepath.Join(partialsDirPath, "page_header.html"):    defaultPageHeaderHTML,
 		filepath.Join(name, "static/input.css"): "@import \"tailwindcss\";\n",
 	}
 

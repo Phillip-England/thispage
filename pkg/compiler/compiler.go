@@ -5,16 +5,44 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/phillip-england/thispage/pkg/tokenizer"
 )
 
-func Compile(tokens []tokenizer.Token, projectPath string) (string, error) {
-	return compileRecursive(tokens, projectPath, nil)
+var argsRegex = regexp.MustCompile(`(?:(\w+)=["'](.*?)["'])|(?:"(.*?)"|'(.*?)'|(\S+))`)
+
+func parseArgs(raw string) (string, map[string]string) {
+	mainArg := ""
+	props := make(map[string]string)
+	matches := argsRegex.FindAllStringSubmatch(raw, -1)
+	for _, match := range matches {
+		if match[1] != "" {
+			// Key-Value pair
+			props[match[1]] = match[2]
+		} else {
+			// Positional argument (mainArg)
+			val := match[3] // double quoted
+			if val == "" {
+				val = match[4] // single quoted
+			}
+			if val == "" {
+				val = match[5] // unquoted
+			}
+			if mainArg == "" && val != "" {
+				mainArg = val
+			}
+		}
+	}
+	return mainArg, props
 }
 
-func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[string]string) (string, error) {
+func Compile(tokens []tokenizer.Token, projectPath string) (string, error) {
+	return compileRecursive(tokens, projectPath, nil, nil)
+}
+
+func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[string]string, props map[string]string) (string, error) {
 	var builder strings.Builder
 	i := 0
 	for i < len(tokens) {
@@ -24,8 +52,18 @@ func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[s
 			builder.WriteString(token.Content)
 			i++
 		case tokenizer.INCLUDE:
-			path := filepath.Join(projectPath, token.Content)
-			// Security check
+			pathStr, newProps := parseArgs(token.Content)
+			
+			// Merge props: existing props + new props (new props override)
+			mergedProps := make(map[string]string)
+			for k, v := range props {
+				mergedProps[k] = v
+			}
+			for k, v := range newProps {
+				mergedProps[k] = v
+			}
+
+			path := filepath.Join(projectPath, pathStr)
 			cleanPath, err := filepath.Abs(path)
 			if err != nil {
 				return "", err
@@ -35,61 +73,54 @@ func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[s
 				return "", err
 			}
 			if !strings.HasPrefix(cleanPath, cleanProject) {
-				return "", fmt.Errorf("include path outside project: %s", token.Content)
+				return "", fmt.Errorf("include path outside project: %s", pathStr)
 			}
 
 			content, err := os.ReadFile(cleanPath)
 			if err != nil {
-				return "", fmt.Errorf("failed to read include %s: %w", token.Content, err)
+				return "", fmt.Errorf("failed to read include %s: %w", pathStr, err)
 			}
 			subTokens := tokenizer.Tokenize(string(content))
-			// Pass blocks down so included files can access slots if needed (advanced usage)
-			subOutput, err := compileRecursive(subTokens, projectPath, blocks)
+			subOutput, err := compileRecursive(subTokens, projectPath, blocks, mergedProps)
 			if err != nil {
 				return "", err
 			}
 			builder.WriteString(subOutput)
 			i++
 		case tokenizer.LAYOUT:
-			// Parse layout block
-			layoutPath := filepath.Join(projectPath, token.Content)
+			pathStr, newProps := parseArgs(token.Content)
+			layoutPath := filepath.Join(projectPath, pathStr)
 			
-			// Find tokens between LAYOUT and ENDLAYOUT
-			layoutContentTokens, nextIndex := extractTokensUntil(tokens, i+1, tokenizer.LAYOUT, tokenizer.ENDLAYOUT)
-			i = nextIndex // Advance main loop past ENDLAYOUT
+			// Merge props for layout
+			mergedProps := make(map[string]string)
+			for k, v := range props {
+				mergedProps[k] = v
+			}
+			for k, v := range newProps {
+				mergedProps[k] = v
+			}
 
-			// Parse blocks within the layout content
+			layoutContentTokens, nextIndex := extractTokensUntil(tokens, i+1, tokenizer.LAYOUT, tokenizer.ENDLAYOUT)
+			i = nextIndex 
+
 			newBlocks := make(map[string]string)
-			// Process layoutContentTokens to find BLOCKs
-			// Note: We don't simply "compile" the content because we need to extract blocks.
-			// Any content *outside* a block in the layout definition is typically ignored or appended?
-			// User example: {{ layout ... }} {{ block "main" }} ... {{ endblock }} {{ endlayout }}
-			// This implies the "page" defines blocks.
-			
-			// We iterate the tokens inside the layout wrapper
 			j := 0
 			for j < len(layoutContentTokens) {
 				t := layoutContentTokens[j]
 				if t.Type == tokenizer.BLOCK {
-					blockName := t.Content
+					blockName, _ := parseArgs(t.Content)
 					blockTokens, nextJ := extractTokensUntil(layoutContentTokens, j+1, tokenizer.BLOCK, tokenizer.ENDBLOCK)
-				j = nextJ
-					// Compile block content
-					compiledBlock, err := compileRecursive(blockTokens, projectPath, nil) // Blocks don't inherit slots usually?
+					j = nextJ
+					compiledBlock, err := compileRecursive(blockTokens, projectPath, nil, mergedProps) // Pass props to blocks?
 					if err != nil {
 						return "", err
 					}
 					newBlocks[blockName] = compiledBlock
 				} else {
-					// Ignore other content inside layout wrapper?
-					// Or maybe treat as "default" content? 
-					// For now, ignore non-block content inside layout directive as per standard pattern.
-				j++
+					j++
 				}
 			}
 
-			// Load Layout File
-			// Security check
 			cleanPath, err := filepath.Abs(layoutPath)
 			if err != nil {
 				return "", err
@@ -99,35 +130,38 @@ func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[s
 				return "", err
 			}
 			if !strings.HasPrefix(cleanPath, cleanProject) {
-				return "", fmt.Errorf("layout path outside project: %s", token.Content)
+				return "", fmt.Errorf("layout path outside project: %s", pathStr)
 			}
 
 			lContent, err := os.ReadFile(cleanPath)
 			if err != nil {
-				return "", fmt.Errorf("failed to read layout %s: %w", token.Content, err)
+				return "", fmt.Errorf("failed to read layout %s: %w", pathStr, err)
 			}
 			layoutTokens := tokenizer.Tokenize(string(lContent))
 			
-			// Compile layout with the captured blocks
-			layoutOutput, err := compileRecursive(layoutTokens, projectPath, newBlocks)
+			layoutOutput, err := compileRecursive(layoutTokens, projectPath, newBlocks, mergedProps)
 			if err != nil {
 				return "", err
 			}
 			builder.WriteString(layoutOutput)
 
 		case tokenizer.SLOT:
+			slotName, _ := parseArgs(token.Content)
 			if blocks != nil {
-				if val, ok := blocks[token.Content]; ok {
+				if val, ok := blocks[slotName]; ok {
+					builder.WriteString(val)
+				}
+			}
+			i++
+		case tokenizer.PROP:
+			propKey, _ := parseArgs(token.Content)
+			if props != nil {
+				if val, ok := props[propKey]; ok {
 					builder.WriteString(val)
 				}
 			}
 			i++
 		case tokenizer.BLOCK, tokenizer.ENDBLOCK, tokenizer.ENDLAYOUT:
-			// Should not be encountered in top-level compile stream if handled correctly,
-			// or treated as raw text / ignored if unmatched.
-			// Treat as ignored/consumed if we are just scanning.
-			// Actually, if we have a BLOCK outside a layout, it might just render?
-			// But for now, let's skip/ignore specific tokens to avoid leaking logic.
 			i++
 		default:
 			i++
@@ -135,7 +169,6 @@ func compileRecursive(tokens []tokenizer.Token, projectPath string, blocks map[s
 	}
 	return builder.String(), nil
 }
-
 func extractTokensUntil(tokens []tokenizer.Token, startIndex int, openType, closeType tokenizer.TokenType) ([]tokenizer.Token, int) {
 	depth := 1
 	var captured []tokenizer.Token
