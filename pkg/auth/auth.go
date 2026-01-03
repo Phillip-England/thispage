@@ -3,11 +3,14 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/phillip-england/thispage/pkg/credentials"
 	"github.com/phillip-england/thispage/pkg/database"
+	"github.com/phillip-england/thispage/pkg/keys"
+	"github.com/phillip-england/vii/vii"
 )
 
 func GenerateKey() (string, error) {
@@ -34,7 +37,10 @@ func CreateSession(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	token := os.Getenv("ADMIN_SESSION_TOKEN")
+	token, err := sessionTokenFromRequest(r)
+	if err != nil {
+		return err
+	}
 	expiresAt := time.Now().Add(15 * time.Minute)
 
 	_, err = database.DB.Exec("INSERT INTO session (key, token, expires_at) VALUES (?, ?, ?)", key, token, expiresAt)
@@ -60,7 +66,10 @@ func IsAuthenticated(r *http.Request) bool {
 	}
 
 	key := cookie.Value
-	tokenEnv := os.Getenv("ADMIN_SESSION_TOKEN")
+	tokenEnv, err := sessionTokenFromRequest(r)
+	if err != nil {
+		return false
+	}
 
 	var tokenDb string
 	var expiresAt time.Time
@@ -90,7 +99,10 @@ func IsAuthenticatedAndRefresh(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	key := cookie.Value
-	tokenEnv := os.Getenv("ADMIN_SESSION_TOKEN")
+	tokenEnv, err := sessionTokenFromRequest(r)
+	if err != nil {
+		return false
+	}
 
 	var tokenDb string
 	var expiresAt time.Time
@@ -125,25 +137,38 @@ func IsAuthenticatedAndRefresh(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func DeleteSession(w http.ResponseWriter, r *http.Request) error {
-    cookie, err := r.Cookie("session_key")
-    if err != nil {
-        return nil // No session to delete
-    }
+	cookie, err := r.Cookie("session_key")
+	if err != nil {
+		return nil // No session to delete
+	}
 
-    key := cookie.Value
-    _, err = database.DB.Exec("DELETE FROM session WHERE key = ?", key)
-    if err != nil {
-        return err
-    }
+	key := cookie.Value
+	_, err = database.DB.Exec("DELETE FROM session WHERE key = ?", key)
+	if err != nil {
+		return err
+	}
 
-    http.SetCookie(w, &http.Cookie{
-        Name:     "session_key",
-        Value:    "",
-        Path:     "/",
-        HttpOnly: true,
-        Expires:  time.Now().Add(-1 * time.Hour),
-        MaxAge:   -1,
-    })
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_key",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Now().Add(-1 * time.Hour),
+		MaxAge:   -1,
+	})
 
-    return nil
+	return nil
+}
+
+func sessionTokenFromRequest(r *http.Request) (string, error) {
+	projectPath, ok := vii.GetContext(keys.ProjectPath, r).(string)
+	if !ok || projectPath == "" {
+		return "", fmt.Errorf("project path not found in context")
+	}
+
+	_, _, token, err := credentials.LoadWithToken(projectPath)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }

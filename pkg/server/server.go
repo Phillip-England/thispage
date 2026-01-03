@@ -14,11 +14,12 @@ import (
 	"github.com/phillip-england/thispage/pkg/keys"
 	"github.com/phillip-england/thispage/pkg/routes"
 	"github.com/phillip-england/thispage/pkg/tailwind"
+	adminassets "github.com/phillip-england/thispage/static"
 	admintemplates "github.com/phillip-england/thispage/templates"
 	"github.com/phillip-england/vii/vii"
 )
 
-func Serve(projectPath string) error {
+func Serve(projectPath string, port string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -72,8 +73,8 @@ func Serve(projectPath string) error {
 	// Serve User Project Static Files
 	app.ServeDir("/static", filepath.Join(absProjectPath, "static"))
 	
-	// Serve Admin Interface Static Files (from tool root)
-	app.ServeDir("/admin/assets", filepath.Join(cwd, "static"))
+	// Serve Admin Interface Static Files (embedded)
+	app.ServeFS("/admin/assets", adminassets.AdminFS)
 
     // Custom handler for live directory to support clean URLs (extensionless .html)
     app.Handle("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -166,5 +167,8 @@ func Serve(projectPath string) error {
     
 	app.Handle("GET /admin/logout", routes.GetAdminLogout)
 
-	return app.Serve("8080")
+	if port == "" {
+		port = "8080"
+	}
+	return app.Serve(port)
 }

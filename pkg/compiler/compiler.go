@@ -271,6 +271,18 @@ func Build(projectPath string) error {
           homeBtn.onmouseout = () => homeBtn.style.background = '#171717';
           container.appendChild(homeBtn);
 
+          const logoutBtn = document.createElement('a');
+          const logoutUrl = new URL(window.location.href);
+          logoutUrl.searchParams.delete('is_admin');
+          const logoutPath = logoutUrl.pathname + (logoutUrl.search ? logoutUrl.search : '') + (logoutUrl.hash ? logoutUrl.hash : '');
+          logoutBtn.href = '/admin/logout?next=' + encodeURIComponent(logoutPath);
+          logoutBtn.textContent = 'Logout';
+          logoutBtn.dataset.skipAdmin = 'true';
+          logoutBtn.style.cssText = 'background:#171717;color:white;padding:0.5rem 1rem;border-radius:0.375rem;font-family:sans-serif;font-size:0.875rem;text-decoration:none;border:1px solid #404040;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);';
+          logoutBtn.onmouseover = () => logoutBtn.style.background = '#262626';
+          logoutBtn.onmouseout = () => logoutBtn.style.background = '#171717';
+          container.appendChild(logoutBtn);
+
           document.body.appendChild(container);
       }
 
@@ -278,6 +290,9 @@ func Build(projectPath string) error {
       document.addEventListener('click', function(e) {
         const link = e.target.closest('a');
         if (link && link.href) {
+            if (link.dataset && link.dataset.skipAdmin === 'true') {
+                return;
+            }
             const url = new URL(link.href, window.location.origin);
             if (url.origin === window.location.origin) {
                 if (!url.searchParams.has('is_admin')) {

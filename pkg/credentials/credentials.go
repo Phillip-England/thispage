@@ -20,8 +20,9 @@ type storedCredentials struct {
 }
 
 type plainCredentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+	SessionToken string `json:"session_token"`
 }
 
 const seedEnvKey = "THISPAGE_SEED"
@@ -90,9 +91,19 @@ func Save(projectPath, username, password string) error {
 		return err
 	}
 
+	token, err := GenerateSessionToken()
+	if err != nil {
+		return err
+	}
+
+	return saveWithToken(projectPath, username, password, token, seed)
+}
+
+func saveWithToken(projectPath, username, password, token, seed string) error {
 	payload := plainCredentials{
-		Username: username,
-		Password: password,
+		Username:     username,
+		Password:     password,
+		SessionToken: token,
 	}
 	plaintext, err := json.Marshal(payload)
 	if err != nil {
@@ -139,57 +150,81 @@ func Save(projectPath, username, password string) error {
 }
 
 func Load(projectPath string) (string, string, error) {
+	username, password, _, err := LoadWithToken(projectPath)
+	return username, password, err
+}
+
+func LoadWithToken(projectPath string) (string, string, string, error) {
 	seed, err := Seed()
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
 	credPath := credentialsPath(projectPath)
 	data, err := os.ReadFile(credPath)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to read credentials: %w", err)
+		return "", "", "", fmt.Errorf("failed to read credentials: %w", err)
 	}
 
 	var stored storedCredentials
 	if err := json.Unmarshal(data, &stored); err != nil {
-		return "", "", fmt.Errorf("failed to parse credentials: %w", err)
+		return "", "", "", fmt.Errorf("failed to parse credentials: %w", err)
 	}
 	if stored.Ciphertext == "" || stored.Nonce == "" {
-		return "", "", fmt.Errorf("credentials file is missing required fields")
+		return "", "", "", fmt.Errorf("credentials file is missing required fields")
 	}
 
 	nonce, err := base64.RawStdEncoding.DecodeString(stored.Nonce)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to decode nonce: %w", err)
+		return "", "", "", fmt.Errorf("failed to decode nonce: %w", err)
 	}
 	ciphertext, err := base64.RawStdEncoding.DecodeString(stored.Ciphertext)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to decode ciphertext: %w", err)
+		return "", "", "", fmt.Errorf("failed to decode ciphertext: %w", err)
 	}
 
 	key := sha256.Sum256([]byte(seed))
 	block, err := aes.NewCipher(key[:])
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create cipher: %w", err)
+		return "", "", "", fmt.Errorf("failed to create cipher: %w", err)
 	}
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create gcm: %w", err)
+		return "", "", "", fmt.Errorf("failed to create gcm: %w", err)
 	}
 
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to decrypt credentials: %w", err)
+		return "", "", "", fmt.Errorf("failed to decrypt credentials: %w", err)
 	}
 
 	var decoded plainCredentials
 	if err := json.Unmarshal(plaintext, &decoded); err != nil {
-		return "", "", fmt.Errorf("failed to parse decrypted credentials: %w", err)
+		return "", "", "", fmt.Errorf("failed to parse decrypted credentials: %w", err)
 	}
 
-	return decoded.Username, decoded.Password, nil
+	if decoded.SessionToken == "" {
+		token, err := GenerateSessionToken()
+		if err != nil {
+			return "", "", "", err
+		}
+		if err := saveWithToken(projectPath, decoded.Username, decoded.Password, token, seed); err != nil {
+			return "", "", "", err
+		}
+		decoded.SessionToken = token
+	}
+
+	return decoded.Username, decoded.Password, decoded.SessionToken, nil
 }
 
 func credentialsPath(projectPath string) string {
 	return filepath.Join(projectPath, ".thispage", "credentials.json")
+}
+
+func GenerateSessionToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", fmt.Errorf("failed to generate session token: %w", err)
+	}
+	return base64.RawStdEncoding.EncodeToString(bytes), nil
 }
