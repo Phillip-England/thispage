@@ -11,7 +11,6 @@ import (
 	"github.com/phillip-england/thispage/pkg/auth"
 	"github.com/phillip-england/thispage/pkg/database"
 	"github.com/phillip-england/thispage/pkg/keys"
-	"github.com/phillip-england/thispage/pkg/marki"
 	"github.com/phillip-england/thispage/pkg/routes"
 	"github.com/phillip-england/thispage/pkg/tailwind"
 	"github.com/phillip-england/vii/vii"
@@ -32,12 +31,6 @@ func Serve(projectPath string) error {
     // Init Database
     if err := database.Init(absProjectPath); err != nil {
         return fmt.Errorf("failed to init database: %w", err)
-    }
-
-    // Ensure marki is installed
-    if err := marki.EnsureInstalled(); err != nil {
-        fmt.Printf("WARNING: Failed to install marki: %v\n", err)
-        fmt.Println("Markdown processing will not be available.")
     }
 
     // Ensure Tailwind CSS is installed and start watch process

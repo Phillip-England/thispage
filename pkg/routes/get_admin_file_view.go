@@ -33,7 +33,7 @@ func GetAdminFileView(w http.ResponseWriter, r *http.Request) {
 	// Security: Check allowed directories and extensions
 	allowed := false
 	isImage := false
-	
+
 	if strings.HasPrefix(slashPath, "static/") {
 		ext := strings.ToLower(filepath.Ext(slashPath))
 		switch ext {
@@ -53,10 +53,6 @@ func GetAdminFileView(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if strings.HasPrefix(slashPath, "layouts/") {
 		if strings.HasSuffix(slashPath, ".html") {
-			allowed = true
-		}
-	} else if strings.HasPrefix(slashPath, "content/") {
-		if strings.HasSuffix(slashPath, ".md") {
 			allowed = true
 		}
 	}

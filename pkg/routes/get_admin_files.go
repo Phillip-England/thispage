@@ -34,7 +34,7 @@ func GetAdminFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Only allow specific top-level directories
-	allowedDirs := []string{"components", "templates", "static", "layouts", "content"}
+	allowedDirs := []string{"components", "templates", "static", "layouts"}
     
     var directories []string
 
@@ -158,11 +158,6 @@ func isAllowedFile(relPath string) bool {
     if strings.HasPrefix(relPath, "layouts/") {
         return strings.HasSuffix(relPath, ".html")
     }
-
-	// Check for content directory
-	if strings.HasPrefix(relPath, "content/") {
-		return strings.HasSuffix(relPath, ".md")
-	}
 
 	return false
 }
