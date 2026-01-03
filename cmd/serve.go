@@ -19,11 +19,11 @@ var serveCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectPath := "."
-		port = "8080"
+		portFromArgs := ""
 
 		if len(args) == 1 {
 			if isValidPort(args[0]) {
-				port = args[0]
+				portFromArgs = args[0]
 			} else {
 				projectPath = args[0]
 			}
@@ -34,7 +34,23 @@ var serveCmd = &cobra.Command{
 			if !isValidPort(args[1]) {
 				log.Fatalf("Invalid port: %s", args[1])
 			}
-			port = args[1]
+			portFromArgs = args[1]
+		}
+
+		if port != "" && !isValidPort(port) {
+			log.Fatalf("Invalid port: %s", port)
+		}
+
+		if port != "" && portFromArgs != "" && port != portFromArgs {
+			log.Printf("Using --port %s instead of positional port %s", port, portFromArgs)
+		}
+
+		resolvedPort := port
+		if resolvedPort == "" {
+			resolvedPort = portFromArgs
+		}
+		if resolvedPort == "" {
+			resolvedPort = "8080"
 		}
 
 		fmt.Println("Building project...")
@@ -45,7 +61,7 @@ var serveCmd = &cobra.Command{
 
 		go watcher.Start(projectPath)
 
-		err := server.Serve(projectPath, port)
+		err := server.Serve(projectPath, resolvedPort)
 		if err != nil {
 			log.Fatalf("Error serving project: %v", err)
 		}
@@ -59,6 +75,7 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
+	serveCmd.Flags().StringVarP(&port, "port", "p", "", "Port to run the server on")
 }
 
 func isValidPort(value string) bool {
