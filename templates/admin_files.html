@@ -197,14 +197,16 @@
         const dir = document.getElementById('create-dir').value;
         const filename = document.getElementById('create-filename').value;
         const hint = document.getElementById('create-hint');
-        
+
         let ext = "";
         if (dir.startsWith("templates") && !dir.startsWith("templates/static")) {
             ext = ".html";
-        } else if (dir.startsWith("components") || dir.startsWith("containers")) {
+        } else if (dir.startsWith("components") || dir.startsWith("containers") || dir.startsWith("layouts")) {
             ext = ".html";
+        } else if (dir.startsWith("content")) {
+            ext = ".md";
         }
-        
+
         if (filename && ext && !filename.endsWith(ext)) {
             hint.textContent = ext;
         } else {
@@ -216,14 +218,16 @@
         const dir = document.getElementById('create-dir').value;
         const filenameInput = document.getElementById('create-filename');
         let filename = filenameInput.value;
-        
+
         let ext = "";
         if (dir.startsWith("templates") && !dir.startsWith("templates/static")) {
             ext = ".html";
-        } else if (dir.startsWith("components") || dir.startsWith("containers")) {
+        } else if (dir.startsWith("components") || dir.startsWith("containers") || dir.startsWith("layouts")) {
             ext = ".html";
+        } else if (dir.startsWith("content")) {
+            ext = ".md";
         }
-        
+
         if (filename && ext && !filename.endsWith(ext)) {
             filenameInput.value = filename + ext;
         }

@@ -12,6 +12,7 @@ import (
 	"github.com/phillip-england/thispage/pkg/database"
 	"github.com/phillip-england/thispage/pkg/keys"
 	"github.com/phillip-england/thispage/pkg/routes"
+	"github.com/phillip-england/thispage/pkg/tailwind"
 	"github.com/phillip-england/vii/vii"
 )
 
@@ -32,25 +33,25 @@ func Serve(projectPath string) error {
         return fmt.Errorf("failed to init database: %w", err)
     }
 
-    // Check for Tailwind CSS
-    if _, err := exec.LookPath("tailwindcss"); err == nil {
-        fmt.Println("Tailwind CSS found. Starting watch process...")
+    // Ensure Tailwind CSS is installed and start watch process
+    tailwindPath, err := tailwind.EnsureInstalled()
+    if err != nil {
+        fmt.Printf("WARNING: Failed to install Tailwind CSS: %v\n", err)
+        fmt.Println("CSS compilation will not be available.")
+    } else {
+        fmt.Println("Starting Tailwind CSS watch process...")
         inputPath := filepath.Join(absProjectPath, "static", "input.css")
         outputPath := filepath.Join(absProjectPath, "static", "output.css")
-        
-        cmd := exec.Command("tailwindcss", "-i", inputPath, "-o", outputPath, "--watch")
+
+        cmd := exec.Command(tailwindPath, "-i", inputPath, "-o", outputPath, "--watch")
         cmd.Stdout = os.Stdout
         cmd.Stderr = os.Stderr
-        
+
         go func() {
             if err := cmd.Run(); err != nil {
                 fmt.Printf("Tailwind CSS process exited with error: %v\n", err)
             }
         }()
-    } else {
-        fmt.Println("WARNING: Tailwind CSS not found.")
-        fmt.Println("To enable automatic CSS compilation, please install the standalone executable:")
-        fmt.Println("https://tailwindcss.com/blog/standalone-cli")
     }
 	
 	app := vii.NewApp()

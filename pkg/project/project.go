@@ -28,7 +28,7 @@ func New(name string, force bool) error {
 	}
 
 	// Define subdirectory paths
-	dirs := []string{"live", "components", "containers", "templates", "templates/posts", "static", "layouts"}
+	dirs := []string{"live", "components", "containers", "templates", "templates/posts", "static", "layouts", "content"}
 
 	for _, dir := range dirs {
 		dirPath := filepath.Join(name, dir)
@@ -41,7 +41,8 @@ func New(name string, force bool) error {
 
 	templatesDirPath := filepath.Join(name, "templates")
 	componentsDirPath := filepath.Join(name, "components")
-    layoutsDirPath := filepath.Join(name, "layouts")
+	layoutsDirPath := filepath.Join(name, "layouts")
+	contentDirPath := filepath.Join(name, "content")
 
     guestLayoutHTML := `<!DOCTYPE html>
 <html lang="en">
@@ -84,12 +85,24 @@ func New(name string, force bool) error {
     &copy; 2024 Your Company.
 </footer>`
 
+	defaultWelcomeMD := `# Welcome to ThisPage
+
+This is your first markdown file. You can use this directory to store content for your site.
+
+## Getting Started
+
+- Edit this file to add your own content
+- Create new markdown files for blog posts, documentation, etc.
+- Use the file manager to organize your content
+`
+
 	filesToCreate := map[string]string{
-		filepath.Join(templatesDirPath, "index.html"):         defaultIndexHTML,
-        filepath.Join(layoutsDirPath, "guest_layout.html"):    guestLayoutHTML,
-		filepath.Join(componentsDirPath, "navigation.html"):     defaultNavigationHTML,
-		filepath.Join(componentsDirPath, "footer.html"):          defaultFooterHTML,
-		filepath.Join(name, "static/input.css"): "@import \"tailwindcss\";\n",
+		filepath.Join(templatesDirPath, "index.html"):       defaultIndexHTML,
+		filepath.Join(layoutsDirPath, "guest_layout.html"):  guestLayoutHTML,
+		filepath.Join(componentsDirPath, "navigation.html"): defaultNavigationHTML,
+		filepath.Join(componentsDirPath, "footer.html"):     defaultFooterHTML,
+		filepath.Join(contentDirPath, "welcome.md"):         defaultWelcomeMD,
+		filepath.Join(name, "static/input.css"):             "@import \"tailwindcss\";\n",
 	}
 
 	for path, content := range filesToCreate {
