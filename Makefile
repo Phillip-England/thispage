@@ -9,3 +9,5 @@ init:
 
 kill:
 	sudo lsof -t -i:8080 | xargs kill -9
+build:
+	env GOOS=linux GOARCH=amd64 go build -o thispage
