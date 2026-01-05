@@ -75,7 +75,10 @@ func New(name string, force bool, username, password string) error {
     <div class="flex flex-col items-center justify-center min-h-[50vh] text-center">
         <h1 class="text-4xl font-bold text-white mb-4">Welcome</h1>
         <p class="text-neutral-400 mb-8">Login to start building your site.</p>
-        <a href="/login" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">Login</a>
+        <div class="flex gap-4">
+            <a href="/login" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-500 transition-colors">Login</a>
+            <a href="/contact" class="bg-neutral-800 text-white px-6 py-3 rounded hover:bg-neutral-700 transition-colors">Contact</a>
+        </div>
     </div>
 {{ endblock }}
 
@@ -83,6 +86,7 @@ func New(name string, force bool, username, password string) error {
 
 	defaultNavigationHTML := `<nav class="flex gap-6 border-b border-neutral-800 pb-6 w-full mb-8 items-center thispage-component">
   <a href='/' class="font-bold text-white text-lg mr-auto">ThisPage</a>
+  <a href='/contact' class="text-neutral-400 hover:text-white transition-colors text-sm">Contact</a>
 </nav>`
 
     defaultFooterHTML := `<footer class="border-t border-neutral-800 py-8 mt-12 text-center text-sm text-neutral-600 thispage-component">

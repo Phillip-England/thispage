@@ -51,13 +51,16 @@
       </div>
       <div>
         <textarea
+          id="message"
           name="message"
           placeholder="Message"
           required
-          maxlength="2000"
-          rows="5"
+          maxlength="256"
+          rows="4"
+          oninput="updateCount()"
           class="w-full bg-transparent border border-neutral-800 p-3 text-sm focus:outline-none focus:border-white transition-colors placeholder:text-neutral-600 resize-none"
         ></textarea>
+        <p class="text-right text-[10px] text-neutral-600 mt-1"><span id="char-count">256</span> remaining</p>
       </div>
 
       <button
@@ -81,5 +84,15 @@
       </a>
     </div>
   </div>
+
+  <script>
+    function updateCount() {
+      const textarea = document.getElementById('message');
+      const counter = document.getElementById('char-count');
+      const remaining = 256 - textarea.value.length;
+      counter.textContent = remaining;
+      counter.className = remaining < 20 ? 'text-red-500' : '';
+    }
+  </script>
 </body>
 </html>

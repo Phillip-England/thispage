@@ -9,7 +9,7 @@ import (
 const (
 	MaxNameLength    = 100
 	MaxEmailLength   = 255
-	MaxMessageLength = 2000
+	MaxMessageLength = 256
 )
 
 type FormContactData struct {
@@ -48,7 +48,7 @@ func (FormContact) Validate(r *http.Request) (FormContactData, error) {
 		return FormContactData{}, errors.New("email must be 255 characters or less")
 	}
 	if len(message) > MaxMessageLength {
-		return FormContactData{}, errors.New("message must be 2000 characters or less")
+		return FormContactData{}, errors.New("message must be 256 characters or less")
 	}
 
 	// Basic email validation
