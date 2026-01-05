@@ -30,37 +30,95 @@
       <p class="text-neutral-600 text-xs mt-2">Messages sent via /contact will appear here</p>
     </div>
     {{else}}
-    <div class="space-y-4">
-      {{range .Messages}}
-      <div class="border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h3 class="font-bold text-lg">{{.Name}}</h3>
-            <a href="mailto:{{.Email}}" class="text-blue-400 hover:text-blue-300 text-sm">{{.Email}}</a>
-          </div>
-          <div class="text-right flex items-center gap-4">
-            <div>
-              <p class="text-[9px] text-neutral-500 uppercase tracking-widest">{{.CreatedAt.Format "Jan 02, 2006"}}</p>
-              <p class="text-[9px] text-neutral-600">{{.CreatedAt.Format "3:04 PM"}}</p>
-            </div>
-            <form action="/admin/messages/delete" method="POST" onsubmit="return confirm('Delete this message?');">
-              <input type="hidden" name="id" value="{{.ID}}">
-              <button type="submit" class="text-neutral-600 hover:text-red-500 p-2 transition-colors" title="Delete message">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-              </button>
-            </form>
-          </div>
-        </div>
-        <div class="text-neutral-300 text-sm whitespace-pre-wrap break-words">{{.Message}}</div>
-        <div class="mt-4 pt-4 border-t border-neutral-800">
-          <span class="text-[9px] text-neutral-600 font-mono">IP: {{.IPAddress}}</span>
-        </div>
+    <form id="bulk-form" action="/admin/messages/delete" method="POST">
+      <div class="flex gap-2 mb-4 items-center">
+        <button type="button" onclick="toggleAll()" class="text-xs uppercase tracking-wider bg-neutral-900 hover:bg-neutral-800 text-white py-2 px-4 border border-neutral-800 transition-colors">
+          Select All
+        </button>
+        <button type="submit" onclick="return confirmBulkDelete()" class="text-xs uppercase tracking-wider bg-red-900 hover:bg-red-800 text-white py-2 px-4 border border-red-800 transition-colors">
+          Delete Selected
+        </button>
+        <span id="selected-count" class="text-xs text-neutral-500 ml-2"></span>
       </div>
-      {{end}}
-    </div>
+
+      <div class="border border-neutral-800">
+        <table class="w-full text-sm">
+          <thead class="border-b border-neutral-800 bg-neutral-900/50">
+            <tr>
+              <th class="p-3 text-left w-10">
+                <input type="checkbox" id="select-all" onchange="toggleAll()" class="accent-blue-500">
+              </th>
+              <th class="p-3 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-medium">From</th>
+              <th class="p-3 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-medium">Preview</th>
+              <th class="p-3 text-right text-[10px] uppercase tracking-widest text-neutral-500 font-medium">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{range .Messages}}
+            <tr class="border-b border-neutral-800 hover:bg-neutral-900/50 transition-colors group">
+              <td class="p-3" onclick="event.stopPropagation()">
+                <input type="checkbox" name="ids" value="{{.ID}}" onchange="updateSelectedCount()" class="accent-blue-500">
+              </td>
+              <td class="p-3">
+                <a href="/admin/messages/view?id={{.ID}}" class="block">
+                  <span class="font-medium text-white group-hover:text-blue-400 transition-colors">{{.Name}}</span>
+                  <span class="text-neutral-500 text-xs block">{{.Email}}</span>
+                </a>
+              </td>
+              <td class="p-3">
+                <a href="/admin/messages/view?id={{.ID}}" class="block text-neutral-400 group-hover:text-neutral-300 transition-colors truncate max-w-md">
+                  {{if gt (len .Message) 80}}{{slice .Message 0 80}}...{{else}}{{.Message}}{{end}}
+                </a>
+              </td>
+              <td class="p-3 text-right">
+                <a href="/admin/messages/view?id={{.ID}}" class="block">
+                  <span class="text-neutral-500 text-xs">{{.CreatedAt.Format "Jan 02"}}</span>
+                  <span class="text-neutral-600 text-xs block">{{.CreatedAt.Format "3:04 PM"}}</span>
+                </a>
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    </form>
     {{end}}
   </main>
+
+  <script>
+    function toggleAll() {
+      const selectAll = document.getElementById('select-all');
+      const checkboxes = document.querySelectorAll('input[name="ids"]');
+      const newState = !Array.from(checkboxes).every(cb => cb.checked);
+
+      checkboxes.forEach(cb => cb.checked = newState);
+      selectAll.checked = newState;
+      updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+      const checked = document.querySelectorAll('input[name="ids"]:checked').length;
+      const countEl = document.getElementById('selected-count');
+      const selectAll = document.getElementById('select-all');
+      const total = document.querySelectorAll('input[name="ids"]').length;
+
+      if (checked > 0) {
+        countEl.textContent = checked + ' selected';
+      } else {
+        countEl.textContent = '';
+      }
+
+      selectAll.checked = checked === total && total > 0;
+    }
+
+    function confirmBulkDelete() {
+      const checked = document.querySelectorAll('input[name="ids"]:checked').length;
+      if (checked === 0) {
+        alert('No messages selected');
+        return false;
+      }
+      return confirm('Delete ' + checked + ' message(s)?');
+    }
+  </script>
 </body>
 </html>

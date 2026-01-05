@@ -150,6 +150,7 @@ func Serve(projectPath string, port string) error {
 	app.Handle("POST /admin/files/zip-upload", authMiddleware(routes.PostAdminZipUpload))
 	app.Handle("GET /admin/export", authMiddleware(routes.GetAdminExport))
 	app.Handle("GET /admin/messages", authMiddleware(routes.GetAdminMessages))
+	app.Handle("GET /admin/messages/view", authMiddleware(routes.GetAdminMessageView))
 	app.Handle("POST /admin/messages/delete", authMiddleware(routes.PostAdminMessageDelete))
 
     // API Routes

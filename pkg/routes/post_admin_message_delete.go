@@ -14,22 +14,22 @@ func PostAdminMessageDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idStr := r.Form.Get("id")
-	if idStr == "" {
-		vii.WriteError(w, http.StatusBadRequest, "Message ID is required")
+	// Support both single "id" and multiple "ids" parameters
+	ids := r.Form["ids"]
+
+	if len(ids) == 0 {
+		vii.Redirect(w, r, "/admin/messages", http.StatusSeeOther)
 		return
 	}
 
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		vii.WriteError(w, http.StatusBadRequest, "Invalid message ID")
-		return
-	}
+	// Delete each message
+	for _, idStr := range ids {
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			continue
+		}
 
-	_, err = database.DB.Exec("DELETE FROM ADMIN_MESSAGE WHERE id = ?", id)
-	if err != nil {
-		vii.WriteError(w, http.StatusInternalServerError, "Failed to delete message: "+err.Error())
-		return
+		database.DB.Exec("DELETE FROM ADMIN_MESSAGE WHERE id = ?", id)
 	}
 
 	vii.Redirect(w, r, "/admin/messages", http.StatusSeeOther)
