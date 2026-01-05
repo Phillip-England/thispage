@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/admin/assets/output.css">
+  <title>Contact</title>
+</head>
+<body class="bg-black text-white font-sans antialiased min-h-screen flex items-center justify-center p-6">
+  <div class="w-full max-w-md">
+    <div class="mb-10 text-center">
+      <h1 class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-medium">Contact</h1>
+      <h2 class="text-2xl font-bold mt-2">Send a Message</h2>
+      {{if .Error}}
+        <p class="mt-4 text-[10px] text-red-500 uppercase tracking-widest font-bold">{{.Error}}</p>
+      {{end}}
+      {{if .Success}}
+        <div class="mt-4 p-3 border border-green-600 bg-green-900/20 rounded">
+          <p class="text-[10px] text-green-500 uppercase tracking-widest font-bold">Message sent successfully!</p>
+        </div>
+      {{end}}
+    </div>
+
+    {{if .IsBlocked}}
+    <div class="text-center">
+      <p class="text-neutral-500 text-xs">You have reached your daily message limit (3 per day).</p>
+      <p class="text-neutral-600 text-xs mt-2">Please try again tomorrow.</p>
+    </div>
+    {{else}}
+    <form action="/contact" method="POST" class="space-y-6">
+      <div class="relative">
+        <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-2">Name</label>
+        <input
+          type="text"
+          name="name"
+          placeholder="Your name"
+          required
+          maxlength="100"
+          autofocus
+          class="w-full bg-transparent border-b border-neutral-800 py-3 text-sm focus:outline-none focus:border-white transition-colors placeholder:text-neutral-700 rounded-none"
+        >
+        <span class="text-[9px] text-neutral-600 mt-1 block">Max 100 characters</span>
+      </div>
+      <div class="relative">
+        <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-2">Email</label>
+        <input
+          type="email"
+          name="email"
+          placeholder="your@email.com"
+          required
+          maxlength="255"
+          class="w-full bg-transparent border-b border-neutral-800 py-3 text-sm focus:outline-none focus:border-white transition-colors placeholder:text-neutral-700 rounded-none"
+        >
+        <span class="text-[9px] text-neutral-600 mt-1 block">Max 255 characters</span>
+      </div>
+      <div class="relative">
+        <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-2">Message</label>
+        <textarea
+          name="message"
+          placeholder="Your message..."
+          required
+          maxlength="2000"
+          rows="6"
+          class="w-full bg-transparent border border-neutral-800 p-3 text-sm focus:outline-none focus:border-white transition-colors placeholder:text-neutral-700 rounded-none resize-none"
+        ></textarea>
+        <span class="text-[9px] text-neutral-600 mt-1 block">Max 2000 characters</span>
+      </div>
+
+      <button
+        type="submit"
+        class="w-full bg-white text-black py-3 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-neutral-200 transition-colors"
+      >
+        Send Message
+      </button>
+
+      {{if .MessagesRemaining}}
+      <p class="text-center text-[9px] text-neutral-600 mt-2">
+        {{.MessagesRemaining}} message(s) remaining today
+      </p>
+      {{end}}
+    </form>
+    {{end}}
+
+    <div class="mt-12 text-center">
+      <a href="/" class="text-[9px] uppercase tracking-widest text-neutral-600 hover:text-neutral-400 transition-colors">
+        Return to site
+      </a>
+    </div>
+  </div>
+</body>
+</html>

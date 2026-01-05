@@ -137,6 +137,8 @@ func Serve(projectPath string, port string) error {
 
 	app.Handle("GET /login", routes.GetLogin)
 	app.Handle("POST /login", routes.PostLogin)
+	app.Handle("GET /contact", routes.GetContact)
+	app.Handle("POST /contact", routes.PostContact)
 	app.Handle("GET /admin", authMiddleware(routes.GetAdminFiles))
 	app.Handle("GET /admin/files/view", authMiddleware(routes.GetAdminFileView))
 	app.Handle("POST /admin/files/save", authMiddleware(routes.PostAdminFileSave))
@@ -147,6 +149,8 @@ func Serve(projectPath string, port string) error {
 	app.Handle("POST /admin/files/create-dir", authMiddleware(routes.PostAdminDirCreate))
 	app.Handle("POST /admin/files/zip-upload", authMiddleware(routes.PostAdminZipUpload))
 	app.Handle("GET /admin/export", authMiddleware(routes.GetAdminExport))
+	app.Handle("GET /admin/messages", authMiddleware(routes.GetAdminMessages))
+	app.Handle("POST /admin/messages/delete", authMiddleware(routes.PostAdminMessageDelete))
 
     // API Routes
     app.Handle("GET /admin/api/components", authMiddleware(routes.GetAdminComponents))

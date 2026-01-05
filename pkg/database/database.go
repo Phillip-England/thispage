@@ -15,6 +15,12 @@ const MaxLoginAttempts = 1000
 // MaxBlacklistEntries is the maximum number of entries in the LOGIN_BLACKLIST table
 const MaxBlacklistEntries = 1000
 
+// MaxAdminMessages is the maximum number of messages in the ADMIN_MESSAGE table (queue)
+const MaxAdminMessages = 100
+
+// MaxMessagesPerIPPerDay is the daily message limit per IP address
+const MaxMessagesPerIPPerDay = 3
+
 // FailedAttemptThreshold is the number of failed attempts before blacklisting
 const FailedAttemptThreshold = 5
 
@@ -54,6 +60,18 @@ func Init(projectPath string) error {
     );
 
     CREATE INDEX IF NOT EXISTS idx_blacklist_ip ON LOGIN_BLACKLIST(ip_address);
+
+    CREATE TABLE IF NOT EXISTS ADMIN_MESSAGE (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip_address TEXT NOT NULL,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at DATETIME NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_admin_message_ip ON ADMIN_MESSAGE(ip_address);
+    CREATE INDEX IF NOT EXISTS idx_admin_message_created ON ADMIN_MESSAGE(created_at);
     `
 	_, err = DB.Exec(query)
 	return err
