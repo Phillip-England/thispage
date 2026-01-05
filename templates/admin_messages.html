@@ -6,18 +6,25 @@
   <link rel="stylesheet" href="/admin/assets/output.css">
   <title>Admin Messages</title>
 </head>
-<body class="bg-black text-white font-sans antialiased min-h-screen p-10">
-  <header class="flex justify-between items-center mb-12 border-b border-neutral-800 pb-6">
+<body class="bg-black text-white font-sans antialiased min-h-screen p-6 md:p-10 pb-32"> <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 border-b border-neutral-800 pb-6 gap-6">
     <div>
       <h1 class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-medium">Admin</h1>
       <h2 class="text-2xl font-bold mt-2">Messages</h2>
-      <p class="text-[9px] text-neutral-600 mt-1 font-mono tracking-widest">{{.TotalCount}}/{{.MaxCount}} messages stored</p>
+      <p class="text-[9px] text-neutral-600 mt-1 font-mono">{{.TotalCount}}/{{.MaxCount}} stored</p>
     </div>
-    <div class="flex gap-4 items-center">
-        <a href="/admin" class="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
+    <div class="flex gap-4 items-center w-full md:w-auto">
+        <div class="relative w-full md:w-64">
+            <input type="text" id="search-input" onkeyup="filterMessages()" placeholder="Search sender or content..."
+                class="w-full bg-neutral-900 border border-neutral-800 text-white text-xs px-3 py-2 focus:border-neutral-600 outline-none transition-colors placeholder:text-neutral-700">
+            <svg class="w-3 h-3 text-neutral-600 absolute right-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
+        <div class="h-8 w-px bg-neutral-800 hidden md:block"></div>
+        <a href="/admin" class="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-white transition-colors whitespace-nowrap">
             File Manager
         </a>
-        <a href="/admin/logout" class="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
+        <a href="/admin/logout" class="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-white transition-colors whitespace-nowrap">
             Logout
         </a>
     </div>
@@ -25,99 +32,170 @@
 
   <main>
     {{if not .Messages}}
-    <div class="border border-neutral-800 p-12 text-center">
-      <p class="text-neutral-500 text-sm">No messages yet</p>
-      <p class="text-neutral-600 text-xs mt-2">Messages sent via /contact will appear here</p>
+    <div class="border border-dashed border-neutral-800 py-24 text-center rounded-lg bg-neutral-900/20">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-neutral-900 mb-4 text-neutral-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+        </svg>
+      </div>
+      <p class="text-neutral-400 text-sm font-medium">No messages yet</p>
+      <p class="text-neutral-600 text-xs mt-1 max-w-xs mx-auto">Messages sent via the contact form will appear here.</p>
     </div>
     {{else}}
-    <form id="bulk-form" action="/admin/messages/delete" method="POST">
-      <div class="flex gap-2 mb-4 items-center">
-        <button type="button" onclick="toggleAll()" class="text-xs uppercase tracking-wider bg-neutral-900 hover:bg-neutral-800 text-white py-2 px-4 border border-neutral-800 transition-colors">
-          Select All
-        </button>
-        <button type="submit" onclick="return confirmBulkDelete()" class="text-xs uppercase tracking-wider bg-red-900 hover:bg-red-800 text-white py-2 px-4 border border-red-800 transition-colors">
-          Delete Selected
-        </button>
-        <span id="selected-count" class="text-xs text-neutral-500 ml-2"></span>
-      </div>
 
-      <div class="border border-neutral-800">
-        <table class="w-full text-sm">
-          <thead class="border-b border-neutral-800 bg-neutral-900/50">
+    <form id="bulk-form" action="/admin/messages/delete" method="POST">
+      <div class="border border-neutral-800 rounded-lg overflow-hidden bg-neutral-900/20">
+        <table class="w-full" id="messages-table">
+          <thead class="border-b border-neutral-800 bg-neutral-900/80 backdrop-blur-sm">
             <tr>
-              <th class="p-3 text-left w-10">
-                <input type="checkbox" id="select-all" onchange="toggleAll()" class="accent-blue-500">
+              <th class="py-3 px-4 text-left w-12">
+                <div class="flex items-center justify-center">
+                    <input type="checkbox" id="select-all" onchange="toggleAll()" class="w-4 h-4 bg-transparent border-neutral-700 rounded focus:ring-0 focus:ring-offset-0 accent-white cursor-pointer">
+                </div>
               </th>
-              <th class="p-3 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-medium">From</th>
-              <th class="p-3 text-left text-[10px] uppercase tracking-widest text-neutral-500 font-medium">Preview</th>
-              <th class="p-3 text-right text-[10px] uppercase tracking-widest text-neutral-500 font-medium">Date</th>
+              <th class="py-3 px-4 text-left text-[9px] uppercase tracking-widest text-neutral-500 font-bold">From</th>
+              <th class="py-3 px-4 text-left text-[9px] uppercase tracking-widest text-neutral-500 font-bold hidden md:table-cell">Preview</th>
+              <th class="py-3 px-4 text-right text-[9px] uppercase tracking-widest text-neutral-500 font-bold w-32">Received</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="text-sm divide-y divide-neutral-800">
             {{range .Messages}}
-            <tr class="border-b border-neutral-800 hover:bg-neutral-900/50 transition-colors group">
-              <td class="p-3" onclick="event.stopPropagation()">
-                <input type="checkbox" name="ids" value="{{.ID}}" onchange="updateSelectedCount()" class="accent-blue-500">
+            <tr class="searchable-row hover:bg-neutral-900/80 transition-colors group cursor-pointer relative" onclick="handleRowClick(event, '{{.ID}}')">
+              <td class="py-4 px-4" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-center">
+                    <input type="checkbox" name="ids" value="{{.ID}}" onchange="updateUI()" class="item-checkbox w-4 h-4 bg-neutral-900 border-neutral-700 rounded focus:ring-0 accent-white cursor-pointer">
+                </div>
               </td>
-              <td class="p-3">
-                <a href="/admin/messages/view?id={{.ID}}" class="block">
-                  <span class="font-medium text-white group-hover:text-blue-400 transition-colors">{{.Name}}</span>
-                  <span class="text-neutral-500 text-xs block">{{.Email}}</span>
-                </a>
+              <td class="py-4 px-4">
+                <div class="font-bold text-neutral-200 group-hover:text-white transition-colors search-target">{{.Name}}</div>
+                <div class="text-neutral-500 text-xs mt-0.5 font-mono search-target">{{.Email}}</div>
               </td>
-              <td class="p-3">
-                <a href="/admin/messages/view?id={{.ID}}" class="block text-neutral-400 group-hover:text-neutral-300 transition-colors truncate max-w-md">
+              <td class="py-4 px-4 hidden md:table-cell">
+                <div class="text-neutral-400 group-hover:text-neutral-300 transition-colors truncate max-w-lg search-target">
                   {{if gt (len .Message) 80}}{{slice .Message 0 80}}...{{else}}{{.Message}}{{end}}
-                </a>
+                </div>
               </td>
-              <td class="p-3 text-right">
-                <a href="/admin/messages/view?id={{.ID}}" class="block">
-                  <span class="text-neutral-500 text-xs">{{.CreatedAt.Format "Jan 02"}}</span>
-                  <span class="text-neutral-600 text-xs block">{{.CreatedAt.Format "3:04 PM"}}</span>
-                </a>
+              <td class="py-4 px-4 text-right whitespace-nowrap">
+                <div class="text-neutral-400 text-xs">{{.CreatedAt.Format "Jan 02"}}</div>
+                <div class="text-neutral-600 text-[10px] mt-0.5">{{.CreatedAt.Format "3:04 PM"}}</div>
               </td>
             </tr>
             {{end}}
           </tbody>
         </table>
+
+        <div id="no-results" class="hidden py-12 text-center">
+            <p class="text-neutral-500 text-sm">No messages match your search.</p>
+        </div>
+      </div>
+
+      <div id="action-bar" class="fixed bottom-8 left-1/2 -translate-x-1/2 translate-y-32 transition-transform duration-300 z-50">
+        <div class="bg-neutral-900 border border-neutral-700 shadow-2xl shadow-black rounded-full py-3 px-6 flex items-center gap-6">
+            <div class="flex items-center gap-2 border-r border-neutral-700 pr-6">
+                <span id="selected-count" class="text-white font-bold font-mono">0</span>
+                <span class="text-xs text-neutral-400 uppercase tracking-wider">Selected</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="document.getElementById('select-all').click()" class="text-xs text-neutral-400 hover:text-white transition-colors uppercase tracking-widest font-bold">
+                    Deselect
+                </button>
+                <button type="submit" onclick="return confirmBulkDelete()" class="bg-red-600 hover:bg-red-500 text-white text-xs uppercase tracking-widest py-2 px-6 rounded-full transition-colors font-bold flex items-center gap-2">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Delete
+                </button>
+            </div>
+        </div>
       </div>
     </form>
     {{end}}
   </main>
 
   <script>
+    // Make rows clickable to view message
+    function handleRowClick(event, id) {
+        // Don't trigger if text is selected or if clicking a link/button
+        if (window.getSelection().toString().length > 0) return;
+        window.location.href = '/admin/messages/view?id=' + id;
+    }
+
+    // Toggle all checkboxes
     function toggleAll() {
       const selectAll = document.getElementById('select-all');
-      const checkboxes = document.querySelectorAll('input[name="ids"]');
-      const newState = !Array.from(checkboxes).every(cb => cb.checked);
+      // Only select visible checkboxes (respect search filter)
+      const visibleRows = Array.from(document.querySelectorAll('.searchable-row:not(.hidden)'));
+      const checkboxes = visibleRows.map(row => row.querySelector('.item-checkbox'));
 
+      const newState = selectAll.checked;
       checkboxes.forEach(cb => cb.checked = newState);
-      selectAll.checked = newState;
-      updateSelectedCount();
+      updateUI();
     }
 
-    function updateSelectedCount() {
-      const checked = document.querySelectorAll('input[name="ids"]:checked').length;
-      const countEl = document.getElementById('selected-count');
+    // Update Floating Bar UI
+    function updateUI() {
+      const checked = document.querySelectorAll('.item-checkbox:checked').length;
       const selectAll = document.getElementById('select-all');
-      const total = document.querySelectorAll('input[name="ids"]').length;
+      const allCheckboxes = document.querySelectorAll('.item-checkbox');
+      const actionBar = document.getElementById('action-bar');
+      const countEl = document.getElementById('selected-count');
 
-      if (checked > 0) {
-        countEl.textContent = checked + ' selected';
-      } else {
-        countEl.textContent = '';
+      // Update Select All Checkbox State
+      if (allCheckboxes.length > 0) {
+          selectAll.checked = checked === allCheckboxes.length;
+          selectAll.indeterminate = checked > 0 && checked < allCheckboxes.length;
       }
 
-      selectAll.checked = checked === total && total > 0;
+      // Update Floating Bar Visibility
+      countEl.textContent = checked;
+      if (checked > 0) {
+          actionBar.classList.remove('translate-y-32');
+      } else {
+          actionBar.classList.add('translate-y-32');
+      }
     }
 
+    // Confirm Delete
     function confirmBulkDelete() {
-      const checked = document.querySelectorAll('input[name="ids"]:checked').length;
-      if (checked === 0) {
-        alert('No messages selected');
-        return false;
-      }
-      return confirm('Delete ' + checked + ' message(s)?');
+      const checked = document.querySelectorAll('.item-checkbox:checked').length;
+      if (checked === 0) return false;
+      return confirm('Are you sure you want to delete ' + checked + ' message(s)? This action cannot be undone.');
+    }
+
+    // Client-side Search
+    function filterMessages() {
+        const input = document.getElementById('search-input');
+        const filter = input.value.toLowerCase();
+        const rows = document.querySelectorAll('.searchable-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const targets = row.querySelectorAll('.searchable-target');
+            // We search simply in the whole row text content for ease
+            const text = row.textContent.toLowerCase();
+
+            if (text.includes(filter)) {
+                row.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                row.classList.add('hidden');
+                // Uncheck items that are hidden by search to avoid accidental delete
+                const cb = row.querySelector('.item-checkbox');
+                if(cb) cb.checked = false;
+            }
+        });
+
+        // Show "No Results" if needed
+        const noResults = document.getElementById('no-results');
+        const table = document.getElementById('messages-table');
+
+        if (visibleCount === 0 && rows.length > 0) {
+            noResults.classList.remove('hidden');
+            table.classList.add('opacity-50');
+        } else {
+            noResults.classList.add('hidden');
+            table.classList.remove('opacity-50');
+        }
+
+        updateUI(); // Refresh count since we might have unchecked hidden items
     }
   </script>
 </body>

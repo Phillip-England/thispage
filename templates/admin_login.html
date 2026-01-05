@@ -6,58 +6,62 @@
   <link rel="stylesheet" href="/admin/assets/output.css">
   <title>Admin Login</title>
 </head>
-<body class="bg-black text-white font-sans antialiased min-h-screen flex items-center justify-center p-6">
-  <div class="w-full max-w-xs">
-    <div class="mb-10 text-center">
-      <h1 class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-medium">Authentication</h1>
+<body class="bg-black text-neutral-200 font-sans antialiased min-h-screen flex items-center justify-center p-6 selection:bg-neutral-700 selection:text-white">
+  <div class="w-full max-w-sm bg-neutral-950 border border-neutral-800 p-8 shadow-2xl shadow-neutral-900/50 rounded-lg">
+    <div class="mb-8 text-center">
+      <h1 class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 font-bold mb-2">System Access</h1>
+      <h2 class="text-2xl font-bold text-white tracking-tight">Login</h2>
+
       {{if .Error}}
-        <p class="mt-4 text-[10px] text-red-500 uppercase tracking-widest font-bold">{{.Error}}</p>
+        <div class="mt-6 p-3 bg-red-950/30 border border-red-900/50 rounded flex items-center justify-center">
+          <p class="text-[10px] text-red-400 uppercase tracking-widest font-bold">{{.Error}}</p>
+        </div>
       {{end}}
       {{if .Warning}}
-        <div class="mt-4 p-3 border border-yellow-600 bg-yellow-900/20 rounded">
+        <div class="mt-6 p-3 bg-yellow-950/30 border border-yellow-900/50 rounded flex items-center justify-center">
           <p class="text-[10px] text-yellow-500 uppercase tracking-widest font-bold">{{.Warning}}</p>
         </div>
       {{end}}
     </div>
 
     {{if .IsBlocked}}
-    <div class="text-center">
-      <p class="text-neutral-500 text-xs">Contact the site administrator to have your IP unblocked.</p>
+    <div class="text-center py-4 bg-neutral-900 rounded border border-neutral-800">
+      <p class="text-neutral-400 text-xs">Access temporarily suspended.</p>
+      <p class="text-neutral-500 text-[10px] mt-1 uppercase tracking-wider">Contact Administrator</p>
     </div>
     {{else}}
-    <form action="/login" method="POST" class="space-y-8">
-      <div class="relative">
+    <form action="/login" method="POST" class="space-y-4">
+      <div>
+        <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-1.5 font-semibold">Username</label>
         <input
           type="text"
           name="username"
-          placeholder="Username"
           required
           autofocus
-          class="w-full bg-transparent border-b border-neutral-800 py-3 text-sm focus:outline-none focus:border-white transition-colors placeholder:text-neutral-700 rounded-none mb-4"
+          class="w-full bg-neutral-900 border border-neutral-800 text-white text-sm px-4 py-3 rounded focus:border-white focus:outline-none focus:ring-1 focus:ring-white/20 transition-all placeholder:text-neutral-700"
         >
       </div>
-      <div class="relative">
+      <div>
+        <label class="block text-[10px] uppercase tracking-widest text-neutral-500 mb-1.5 font-semibold">Password</label>
         <input
           type="password"
           name="password"
-          placeholder="Password"
           required
-          class="w-full bg-transparent border-b border-neutral-800 py-3 text-sm focus:outline-none focus:border-white transition-colors placeholder:text-neutral-700 rounded-none"
+          class="w-full bg-neutral-900 border border-neutral-800 text-white text-sm px-4 py-3 rounded focus:border-white focus:outline-none focus:ring-1 focus:ring-white/20 transition-all placeholder:text-neutral-700"
         >
       </div>
-
       <button
         type="submit"
-        class="w-full bg-white text-black py-3 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-neutral-200 transition-colors"
+        class="w-full bg-white text-black py-3 rounded text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-neutral-200 transition-colors mt-2 shadow-lg shadow-white/5"
       >
-        Sign In
+        Authenticate
       </button>
     </form>
     {{end}}
 
-    <div class="mt-12 text-center">
-      <a href="/" class="text-[9px] uppercase tracking-widest text-neutral-600 hover:text-neutral-400 transition-colors">
-        Return to site
+    <div class="mt-8 text-center border-t border-neutral-900 pt-6">
+      <a href="/" class="text-[10px] uppercase tracking-widest text-neutral-600 hover:text-white transition-colors">
+        ← Return to site
       </a>
     </div>
   </div>
